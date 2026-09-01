@@ -589,3 +589,39 @@ Item 115. Verified: 49 assertions over ingestion — CSV quoting/newlines/CRLF, 
           real 1993–2022 sample data (13 rows → 8 catalogued, 5 rejected with reasons). `npm run check` clean
           (28 files, 6 contracts pure, 3 handlers portable, no cycles; 0 type errors across 44 files); site
           build clean.
+
+## Phase 22 — API Hookup for the Price Visualization (done)
+
+Item 116. Requirements 1, 2 and 4 of this request were already satisfied by Phase 19 and migrated to the new
+          contracts in Phase 21 — `lib/priceChart.ts` (uPlot wrapper, emerald line, zinc-800 grid, mono axes),
+          `components/PriceDrawer.astro` + `lib/priceDrawer.ts` (sliding drawer with SKU, median price and the
+          canvas), wired into `ScreenerTable.astro`. Re-verified rather than rebuilt.
+Item 117. `dataService.fetchMarketData()` now has a three-tier fallback: the deployed `database` module API via
+          `PUBLIC_API_URL`, then the market-database repo's raw `dev` branch, then the bundled dataset. Each
+          tier falls through on network error, offline, or any non-2xx, and the reason a tier was skipped is
+          carried in `reason` for the badge tooltip.
+Item 118. Added `toComponents()` to unwrap the module API's `{ count, components }` envelope as well as a bare
+          array, and to normalize either the raw or already-normalized record shape — one code path for all
+          three tiers.
+Item 119. `DataOrigin` widened to `"api" | "remote" | "fallback"` and the screener badge now names the tier
+          ("● database API" / "● market-database (dev)" / "● local sample data"). It still never claims the
+          numbers are live market pricing, because they are sample data at every tier today.
+Item 120. Typed `PUBLIC_API_URL` in `src/env.d.ts`, added `.env.example`, and set `envPrefix` in
+          `vite.config.mjs` so vite-node resolves `PUBLIC_*` the same way Astro does. `.env` is already
+          gitignored; the file documents that `PUBLIC_*` is inlined into the client bundle and must never hold
+          a secret.
+Item 121. Removed a speculative API tier I had briefly added to `fetchContributors`: `PUBLIC_API_URL` points at
+          the *database* module, which serves components, not contributors. A `/contributors` call would have
+          404'd on every page load. When the contributors module gains a deployed API it should get its own
+          base URL.
+Item 122. Verified end to end against a real service, not a stub: rebuilt the database API image on the new
+          contracts, ran it in Docker against a local upstream serving the migrated dataset, pointed
+          `PUBLIC_API_URL` at it, and confirmed `origin: "api"`, the envelope unwrapping, and that
+          `manufacturer` / `originalMSRP` / `specs` / the tuple series all survive the round trip and feed
+          `toUplotSeries` correctly (10/10). Tier-selection logic covered separately (6/6).
+Item 123. Confirmed a default build (no `PUBLIC_API_URL`) bakes in no API URL and still ships the drawer, and
+          that with the variable set the value is inlined into the client bundle.
+Item 124. **The APIs are still not deployed.** `silicon-index-database-api.workers.dev` and the AI equivalent do
+          not resolve, while `raw.githubusercontent.com` does from the same shell — so this is absence of a
+          deployment, not a sandbox restriction. The hookup activates the moment `PUBLIC_API_URL` is set; until
+          then the portal silently uses tier 2 or 3, which is the intended behaviour.

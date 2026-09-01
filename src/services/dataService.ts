@@ -40,13 +40,38 @@ const CONTRIBUTORS_RAW_URL =
 const LOCAL_MARKET_DATA_URL = "/mock-data.json";
 const STAGING_KEY = "si_contributions";
 
-export type DataOrigin = "remote" | "fallback";
+/**
+ * Base URL of the deployed `database` module API (see `deploy/database/`).
+ * Set `PUBLIC_API_URL` at build time to activate it; unset, the portal skips
+ * straight to the raw upstream. Astro inlines `PUBLIC_*` vars into the client
+ * bundle, so this must never hold a secret.
+ */
+const API_BASE_URL = (import.meta.env.PUBLIC_API_URL ?? "").trim().replace(/\/+$/, "");
+
+/**
+ * Where the rendered data actually came from. Distinguished so the UI can be
+ * honest about provenance rather than implying every fetch is live.
+ */
+export type DataOrigin = "api" | "remote" | "fallback";
 
 export interface ServiceResult<T> {
   data: T;
   origin: DataOrigin;
-  /** Present when the remote attempt failed; useful for the source badge/tooltip. */
+  /** Why an earlier tier was skipped; surfaced in the source badge tooltip. */
   reason?: string;
+}
+
+/** Normalizes any accepted payload shape into `HardwareComponent[]`. */
+function toComponents(payload: unknown): HardwareComponent[] {
+  // The module API wraps its list: `{ count, components }`.
+  const list =
+    payload && typeof payload === "object" && !Array.isArray(payload) && "components" in payload
+      ? (payload as { components: unknown }).components
+      : payload;
+
+  if (!Array.isArray(list)) throw new Error("Payload is not an array of components");
+  // Upstream may publish either the normalized or the raw shape.
+  return isHardwareComponentArray(list) ? list : (list as ComponentEntry[]).map(toHardwareComponent);
 }
 
 /* ------------------------------------------------------------------ */
@@ -54,25 +79,47 @@ export interface ServiceResult<T> {
 /* ------------------------------------------------------------------ */
 
 /**
- * Live market data with automatic local fallback.
- * Falls back on network error, offline, or any non-2xx (404/403 included).
+ * Market data with a three-tier fallback:
+ *
+ *   1. the deployed `database` module API   (`PUBLIC_API_URL`, when configured)
+ *   2. the market-database repo's raw `dev` branch
+ *   3. the bundled local dataset
+ *
+ * Each tier falls through on network error, offline, or any non-2xx (404/403
+ * included), so the screener renders regardless of what is deployed. The
+ * reason a tier was skipped is carried through for the source badge.
  */
 export async function fetchMarketData(): Promise<ServiceResult<HardwareComponent[]>> {
+  const skipped: string[] = [];
+
+  if (API_BASE_URL) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/components`, {
+        cache: "no-store",
+        headers: { accept: "application/json" }
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return { data: toComponents(await res.json()), origin: "api" };
+    } catch (err) {
+      skipped.push(`api: ${(err as Error).message}`);
+    }
+  }
+
   try {
     const res = await fetch(MARKET_DATA_RAW_URL, { cache: "no-store" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const payload: unknown = await res.json();
-    // The remote repo may publish either the normalized or the raw shape.
-    const data = isHardwareComponentArray(payload)
-      ? payload
-      : (payload as ComponentEntry[]).map(toHardwareComponent);
-    return { data, origin: "remote" };
+    return {
+      data: toComponents(await res.json()),
+      origin: "remote",
+      reason: skipped.length ? skipped.join("; ") : undefined
+    };
   } catch (err) {
-    const res = await fetch(LOCAL_MARKET_DATA_URL, { cache: "no-store" });
-    if (!res.ok) throw new Error(`Local fallback failed (HTTP ${res.status})`);
-    const local = (await res.json()) as ComponentEntry[];
-    return { data: local.map(toHardwareComponent), origin: "fallback", reason: (err as Error).message };
+    skipped.push(`upstream: ${(err as Error).message}`);
   }
+
+  const res = await fetch(LOCAL_MARKET_DATA_URL, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Local fallback failed (HTTP ${res.status})`);
+  return { data: toComponents(await res.json()), origin: "fallback", reason: skipped.join("; ") };
 }
 
 /**
@@ -80,6 +127,10 @@ export async function fetchMarketData(): Promise<ServiceResult<HardwareComponent
  * from admin-approved submissions when the remote repo has nothing published.
  */
 export async function fetchContributors(): Promise<ServiceResult<ContributorProfile[]>> {
+  // No API tier here on purpose: `PUBLIC_API_URL` points at the *database*
+  // module, which serves components, not contributors. Adding a speculative
+  // `/contributors` call would 404 on every page load. When the contributors
+  // module gains a deployed API, give it its own base URL and add a tier.
   try {
     const res = await fetch(CONTRIBUTORS_RAW_URL, { cache: "no-store" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);

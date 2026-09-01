@@ -248,11 +248,18 @@
   async function init(): Promise<void> {
     bindEvents();
     try {
-      const { data, origin } = await fetchMarketData();
+      const { data, origin, reason } = await fetchMarketData();
       state.all = data;
       populateFilterOptions(data);
       if (els.sourceBadge) {
-        els.sourceBadge.textContent = origin === "remote" ? "● market-database (dev)" : "● local sample data";
+        // Name the source; never imply the numbers are live market pricing.
+        const label: Record<typeof origin, string> = {
+          api: "● database API",
+          remote: "● market-database (dev)",
+          fallback: "● local sample data"
+        };
+        els.sourceBadge.textContent = label[origin];
+        if (reason) els.sourceBadge.title = `Earlier source unavailable — ${reason}`;
       }
       render();
     } catch (err) {
