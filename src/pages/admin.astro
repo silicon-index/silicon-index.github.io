@@ -92,7 +92,8 @@ import { DEV_ECOSYSTEM_NAV } from "../config/navigation";
                   </span>
                 )}
               </label>
-              <input type="url" id={`nav-${item.id}`} data-nav-input={item.id} placeholder={item.href} />
+              <p class="field-hint" style="margin:0 0 5px;">{item.description}</p>
+              <input type="url" id={`nav-${item.id}`} data-nav-input={item.id} placeholder={item.remoteDevUrl} />
               {item.fallbackHref && (
                 <label class="checkbox-label" style="margin-top:6px;">
                   <input type="checkbox" data-nav-deployed={item.id} />

@@ -8,20 +8,24 @@ interface Props {
 const { activeNav = "none" } = Astro.props;
 ---
 
-<header class="flex items-center justify-between gap-3 flex-wrap px-5 py-2.5 bg-bg-raised border-b border-border sticky top-0 z-10">
-  <div class="flex items-center gap-2">
-    <span class="inline-flex items-center justify-center w-6.5 h-6.5 rounded-md bg-accent text-[#04101f] font-bold text-[11px]">SI</span>
-    <span class="font-semibold text-sm">Silicon Index</span>
-    <span class="text-[11px] text-text-faint border border-border rounded-full px-1.5 py-0.5">Astro MVP</span>
-  </div>
-  <nav class="flex items-center gap-1" aria-label="Primary">
-    <a href="/" class:list={["nav-link", activeNav === "screener" && "nav-link--active"]}>Screener</a>
-    <a href="/contribute" class:list={["nav-link", activeNav === "contribute" && "nav-link--active"]}>Contribute</a>
-    <a href="/#support-panel" class="nav-link nav-link--support">♥ Support</a>
-    <EcosystemNav variant="header" />
-  </nav>
-  <div class="flex items-center gap-2">
-    <span id="nav-auth-slot" class="flex items-center gap-1.5"></span>
+<header class="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2 flex items-center justify-between gap-4 flex-wrap">
+    <div class="flex items-center space-x-3">
+      <a href="/" class="text-emerald-400 font-mono font-bold text-lg tracking-wider">
+        SILICON_INDEX<span class="text-zinc-500 text-xs ml-1">[dev]</span>
+      </a>
+    </div>
+
+    <nav class="flex items-center gap-4 text-sm flex-wrap" aria-label="Primary">
+      <a href="/" class:list={["term-link", activeNav === "screener" && "term-link--active"]}>Screener</a>
+      <a href="/contribute" class:list={["term-link", activeNav === "contribute" && "term-link--active"]}>Contribute</a>
+      <a href="/#support-panel" class="term-link term-link--support">♥ Support</a>
+      <EcosystemNav variant="header" />
+    </nav>
+
+    <div class="flex items-center gap-2">
+      <span id="nav-auth-slot" class="flex items-center gap-2"></span>
+    </div>
   </div>
 </header>
 
@@ -38,17 +42,17 @@ const { activeNav = "none" } = Astro.props;
   if (slot) {
     const session = getSession();
     if (session) {
-      const adminLink = session.role === "admin" ? '<a class="nav-link" href="/admin">Admin</a>' : "";
+      const adminLink = session.role === "admin" ? '<a class="term-link" href="/admin">Admin</a>' : "";
       slot.innerHTML =
         adminLink +
-        `<span class="nav-user">${escapeHtml(session.username)}<span class="nav-role-badge">${escapeHtml(session.role)}</span></span>` +
-        '<button type="button" class="nav-link nav-link--btn" id="nav-sign-out">Sign out</button>';
+        `<span class="term-user">${escapeHtml(session.username)}<span class="term-role">${escapeHtml(session.role)}</span></span>` +
+        '<button type="button" class="term-link" id="nav-sign-out">Sign out</button>';
       document.getElementById("nav-sign-out")?.addEventListener("click", () => {
         logout();
         window.location.href = "/";
       });
     } else {
-      slot.innerHTML = '<a class="nav-link" href="/login">Sign in / Register</a>';
+      slot.innerHTML = '<a class="term-link" href="/login">Sign in / Register</a>';
     }
   }
 </script>

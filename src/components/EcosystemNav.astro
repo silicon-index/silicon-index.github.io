@@ -10,7 +10,7 @@ const { variant } = Astro.props;
 
 {variant === "header" && (
   <div class="relative" data-ecosystem-menu>
-    <button type="button" class="nav-link" id="ecosystem-menu-button" aria-expanded="false" aria-haspopup="true" aria-controls="ecosystem-menu">
+    <button type="button" class="term-link" id="ecosystem-menu-button" aria-expanded="false" aria-haspopup="true" aria-controls="ecosystem-menu">
       Ecosystem ▾
     </button>
     <div id="ecosystem-menu" class="ecosystem-menu" hidden role="menu" aria-labelledby="ecosystem-menu-button">
@@ -25,9 +25,12 @@ const { variant } = Astro.props;
           rel={item.isExternal ? "noopener noreferrer" : undefined}
           title={isFallingBack(item) ? `${item.title} — Pages not deployed, linking to the dev branch instead` : item.title}
         >
-          <span>{item.title}</span>
-          {item.badge && <span class="ecosystem-card-badge ecosystem-card-badge--dev">{item.badge}</span>}
-          <span class="ecosystem-card-badge ecosystem-card-badge--dev" data-nav-fallback-badge hidden={!isFallingBack(item)}>dev fallback</span>
+          <span class="ecosystem-menu-title">
+            <span>{item.title}</span>
+            {item.badge && <span class="ecosystem-card-badge ecosystem-card-badge--dev">{item.badge}</span>}
+            <span class="ecosystem-card-badge ecosystem-card-badge--dev" data-nav-fallback-badge hidden={!isFallingBack(item)}>dev fallback</span>
+          </span>
+          <span class="ecosystem-menu-desc">{item.description}</span>
         </a>
       ))}
     </div>
@@ -65,7 +68,7 @@ const { variant } = Astro.props;
         href={resolveNavHref(item)}
         target={item.isExternal ? "_blank" : undefined}
         rel={item.isExternal ? "noopener noreferrer" : undefined}
-        title={isFallingBack(item) ? `${item.title} — Pages not deployed, linking to the dev branch instead` : item.title}
+        title={isFallingBack(item) ? `${item.title} — Pages not deployed, linking to the dev branch instead` : item.description}
       >
         {item.title}
         {item.badge && <span class="ecosystem-card-badge ecosystem-card-badge--dev">{item.badge}</span>}

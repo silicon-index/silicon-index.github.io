@@ -968,10 +968,9 @@ body {
 
 .ecosystem-menu-item {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  padding: 7px 9px;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 9px;
   border-radius: var(--radius);
   font-size: 12.5px;
   color: var(--text-dim);
@@ -981,6 +980,93 @@ body {
 .ecosystem-menu-item:hover {
   background: rgba(79, 141, 253, 0.08);
   color: var(--text);
+}
+
+.ecosystem-menu-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-weight: 600;
+}
+
+.ecosystem-menu-desc {
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.4;
+  max-width: 260px;
+}
+
+
+/* Terminal-style header (zinc/emerald) */
+.term-link {
+  color: #a1a1aa;
+  text-decoration: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.12s ease;
+}
+
+.term-link:hover {
+  color: #f4f4f5;
+}
+
+.term-link--active {
+  color: #34d399;
+}
+
+.term-link--support {
+  color: #fb7185;
+}
+
+.term-link--support:hover {
+  color: #fda4af;
+}
+
+.term-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-family: var(--mono);
+  color: #a1a1aa;
+  border: 1px solid #3f3f46;
+  background: #18181b;
+  border-radius: 4px;
+  padding: 3px 8px;
+}
+
+.term-role {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #34d399;
+  border: 1px solid #3f3f46;
+  background: #27272a;
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+/* Ecosystem dropdown, matched to the terminal header */
+.ecosystem-menu {
+  background: #09090b;
+  border-color: #27272a;
+}
+
+.ecosystem-menu-item:hover {
+  background: #18181b;
+  color: #f4f4f5;
+}
+
+.ecosystem-card-badge--dev {
+  font-family: var(--mono);
+  color: #34d399;
+  background: #27272a;
+  border-color: #3f3f46;
 }
 
 /* Price chart modal */

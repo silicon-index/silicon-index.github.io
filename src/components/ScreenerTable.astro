@@ -232,7 +232,7 @@
       state.all = data;
       populateFilterOptions(data);
       if (els.sourceBadge) {
-        els.sourceBadge.textContent = origin === "remote" ? "● live market-database" : "● local fallback data";
+        els.sourceBadge.textContent = origin === "remote" ? "● market-database (dev)" : "● local sample data";
       }
       render();
     } catch (err) {

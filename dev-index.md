@@ -274,3 +274,68 @@ Item 37. Not done, deliberately: the workspace tree in the brief shows sibling f
          GitHub repositories, not directories of this one — creating them here would commit stub copies of other
          repos into the frontend. The decoupling is handled by raw-URL fetching plus fallbacks (Item 26) exactly
          as the brief's integration section specifies.
+
+## Phase 14 — Module Registry & Contract Stubs (done)
+
+Item 38. Reworked `src/config/navigation.ts` to the requested `NavModule` shape — `ECOSYSTEM_MODULES` keyed by
+         id, with `title`, `description`, `remoteDevUrl`, `localStubPath`, `badge`, `isExternal` — plus
+         `getModuleNavList()` and `resolveModuleHref()`. `DEV_ECOSYSTEM_NAV` is kept as a derived alias so the
+         existing nav components and the admin editor keep working unchanged.
+Item 39. Retained the Phase 12 fallback contract (`fallbackHref` / `pagesDeployed`) on top of the new shape.
+         The brief's `resolveModuleHref(id, fallbackToLocal)` would otherwise have fallen back to
+         `localStubPath` values like `/src/modules/contributors`, which are source paths and not served routes —
+         they would 404 in a static build. `localStubPath` is therefore documented and typed as a repo-relative
+         docs pointer that is never used as an href; the href fallback stays the `/tree/dev` URL. Asserted in
+         tests that no `localStubPath` starts with `/`.
+Item 40. `admin`'s fallback is `/admin` — this portal ships its own working moderation console, so that is a
+         genuinely useful local fallback rather than a dead end. `security` still falls back to its `dev` branch.
+Item 41. Surfaced the new `description` field: the header dropdown now renders a title row plus a one-line
+         module description, quick links use it as their tooltip, and the Admin Panel's navigation editor shows
+         it as help text above each URL field.
+Item 42. Created `src/modules/{contributors,database,scrapers,ai,security,admin}/` with a README per module
+         (target repo, branch, nav id, purpose) and a top-level `src/modules/README.md` explaining the boundary.
+Item 43. `src/modules/contributors/contracts.ts` and `src/modules/database/schemas.ts` define the modules'
+         **upstream wire contracts** with adapters to/from the canonical model, rather than re-declaring
+         `PriceSubmission` / `HardwareComponent` as parallel copies. Forking those models is what Item 28 removed;
+         an explicit upstream-vs-internal boundary keeps a schema change absorbed in one adapter. Real differences
+         are captured: upstream `submittedAt` is an epoch number vs the portal's ISO string, and upstream splits
+         `brand`/`model` and dates by `releaseDate` rather than `releaseYear`.
+Item 44. Verified with 17 assertions against the real modules (`vite-node`): submission round-trip
+         internal → wire → internal preserves the ISO timestamp through the epoch conversion, the database
+         adapter joins brand+model and derives `releaseYear` from `releaseDate`, and the navigation API returns
+         the expected hrefs including the unknown-id `"#"` case. `astro check` 0 errors across 27 files, build
+         clean, dropdown renders 6 descriptions, and zero `/src/` paths or dead Pages URLs appear as hrefs.
+Item 45. **Correction, and a correction to that correction.** I first read `gh auth status` (authenticated) and
+         `gh api repos/silicon-index/<repo>` reporting `push: true, admin: true`, and told the user the brief's
+         "no Git tokens" premise was wrong. That was itself wrong, and the write attempt proved it: pushing to a
+         sibling repo returns `403 Resource not accessible by integration`. The `permissions` block in the repo
+         JSON describes the **user account's** rights on that repo, not what this **token** may do — the
+         Codespaces `GITHUB_TOKEN` (a `ghu_` user-to-server token) is scoped to the current repository only.
+         Verified end to end: write to a sibling repo → 403; read a sibling repo → OK; `git push --dry-run` on
+         this repo → accepted. So the brief was substantially right for writes, and the stub-folder approach in
+         Phase 14 is the correct workaround, not a detour around an imaginary constraint. Lesson recorded: repo
+         `permissions` is not a token capability check — only an actual write attempt is.
+Item 46. Added `scripts/sync-modules.sh` so the sync runs from a terminal with the user's own credentials, which
+         do carry cross-repo write access. It regenerates `market-data.json` from `public/mock-data.json` using
+         the same adapter the portal uses, clones each target repo's `dev` branch to a temp dir, writes
+         `data/` payloads plus documentation, and commits/pushes. Defaults to a dry run; needs `--push` to
+         actually publish, and reports what it would do either way.
+Item 47. Seeded payloads are labelled honestly at the source: `data/README.md` in the market-database repo states
+         in bold that the prices are sample/mock values and must not be cited as observed market pricing, and the
+         contributors registry ships as `[]` on purpose — trust scores are earned via admin approval, and seeding
+         invented contributors would put fabricated trust metrics in front of users.
+Item 48. Related honesty fix in the portal: the screener's source badge read "● live market-database" whenever a
+         fetch resolved remotely. Once that repo publishes seed data, that phrasing would imply real market
+         pricing. It now names the source without vouching for the data — "● market-database (dev)" vs
+         "● local sample data".
+
+## Phase 15 — Terminal Header Restyle (done)
+
+Item 49. Restyled `src/components/Header.astro` to the requested zinc/emerald terminal look (sticky, backdrop
+         blur, `max-w-7xl` shell, `SILICON_INDEX[dev]` monospace wordmark) while keeping every existing feature:
+         the Screener/Contribute/Support links, the Ecosystem dropdown, and the session-aware auth slot
+         (sign in → username + role chip → sign out, plus the Admin link for admins).
+Item 50. The brief's `HeaderNav.astro` rendered the six ecosystem links inline; with three internal links and the
+         auth slot also in the bar that does not fit, so they stay in the accessible dropdown from Phase 12,
+         restyled to match (zinc surfaces, emerald badges). New `.term-*` classes were added rather than
+         overwriting the existing design tokens, so the rest of the site is untouched.
