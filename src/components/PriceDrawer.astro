@@ -1,0 +1,44 @@
+---
+/**
+ * Sliding price-history drawer. Markup only — `lib/priceDrawer.ts` owns the
+ * behaviour, and the screener opens it via `openPriceDrawer(component)`.
+ */
+---
+
+<div id="price-drawer" class="drawer" hidden>
+  <div class="drawer-scrim" aria-hidden="true"></div>
+
+  <aside
+    id="price-drawer-panel"
+    class="drawer-panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="price-drawer-title"
+  >
+    <header class="drawer-header">
+      <div class="drawer-heading">
+        <h2 id="price-drawer-title">Component</h2>
+        <code id="price-drawer-sku" class="drawer-sku"></code>
+      </div>
+      <button type="button" id="price-drawer-close" class="drawer-close" aria-label="Close price history">✕</button>
+    </header>
+
+    <div id="price-drawer-stats" class="drawer-stats"></div>
+
+    <section class="drawer-chart" aria-labelledby="price-drawer-chart-heading">
+      <h3 id="price-drawer-chart-heading" class="drawer-section-title">Price history</h3>
+      <div id="price-drawer-canvas" class="drawer-canvas"></div>
+    </section>
+
+    <p class="drawer-note">
+      Observations are sample data, not live market pricing. Series resolves through
+      <code>dataService.fetchMarketData()</code>, which falls back to the local dataset while the
+      market-database repo publishes nothing.
+    </p>
+  </aside>
+</div>
+
+<script>
+  import { initPriceDrawer } from "@/lib/priceDrawer";
+  initPriceDrawer();
+</script>

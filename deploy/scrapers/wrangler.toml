@@ -1,0 +1,24 @@
+# Market Scrapers API — Cloudflare Workers deployment.
+#
+# Deploys the SAME handler the Docker image serves:
+#   src/modules/scrapers/api.ts
+#
+# Sanitization only; this service does not crawl. Crawling belongs in a
+# container with egress control and rate limiting, not on the edge.
+#
+#   npx wrangler dev    --config deploy/scrapers/wrangler.toml
+#   npx wrangler deploy --config deploy/scrapers/wrangler.toml
+
+name = "silicon-index-scrapers-api"
+main = "../../src/modules/scrapers/api.ts"
+compatibility_date = "2025-01-01"
+
+[vars]
+ALLOWED_ORIGINS = "*"
+# The store whitelist ships empty by design — a store is added only after its
+# terms and robots policy are reviewed (DEV-GUIDE.md §4). Provide the reviewed
+# list as JSON here, or as a secret for a non-public roster.
+STORE_WHITELIST = "[]"
+
+[observability]
+enabled = true

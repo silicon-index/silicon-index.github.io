@@ -1,0 +1,22 @@
+# Market Database API — Cloudflare Workers deployment.
+#
+# Deploys the SAME handler the Docker image serves:
+#   src/modules/database/api.ts
+# No adapter, no build step — the module is already WinterCG compliant.
+#
+#   npx wrangler dev    --config deploy/database/wrangler.toml
+#   npx wrangler deploy --config deploy/database/wrangler.toml
+
+name = "silicon-index-database-api"
+main = "../../src/modules/database/api.ts"
+compatibility_date = "2025-01-01"
+
+# No nodejs_compat flag: the handler uses no Node built-ins. If this ever
+# becomes necessary, the handler has stopped being portable — fix the handler.
+
+[vars]
+MARKET_DATA_URL = "https://raw.githubusercontent.com/silicon-index/silicon-index-market-database.github.io/dev/data/market-data.json"
+ALLOWED_ORIGINS = "*"
+
+[observability]
+enabled = true

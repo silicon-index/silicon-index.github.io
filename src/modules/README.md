@@ -15,11 +15,11 @@ implementation it owns, and its own `README.md`.
 
 | Module | Contracts | Implementation | Mirrors |
 | :--- | :--- | :--- | :--- |
-| `ai/` | fair-value + anomaly I/O, `AutoAcceptDecision` | `engine.ts` | `silicon-index-ai.github.io` |
+| `ai/` | fair-value + anomaly I/O, `AutoAcceptDecision` | `engine.ts`, `api.ts` | `silicon-index-ai.github.io` |
 | `admin/` | `SubmissionStatus`, `ModerationAction`, `AUTO_ACCEPT_RULES` | `moderation.ts` | `silicon-index-admin-dashboard.github.io` |
 | `contributors/` | tiers, `PriceSubmission`, verification schema, wire shape | `registry.ts`, `identity.ts` | `silicon-index-contributors.github.io` |
-| `database/` | `HardwareComponent`, validation models | `adapters.ts`, `schemas.ts` | `silicon-index-market-database.github.io` |
-| `scrapers/` | ingestion payload, store whitelist, sanitization | — | `silicon-index-market-scrapers.github.io` |
+| `database/` | `HardwareComponent`, validation models | `adapters.ts`, `schemas.ts`, `validate.ts`, `api.ts` | `silicon-index-market-database.github.io` |
+| `scrapers/` | ingestion payload, store whitelist, sanitization | `sanitize.ts`, `api.ts` | `silicon-index-market-scrapers.github.io` |
 | `security/` | advisory payload, incident reporting | — | `silicon-index-security.github.io` |
 
 ## Dependency rule
@@ -71,6 +71,13 @@ Prefer the owning module over the `lib/types` facade in new code.
 
 Adapters between the two live beside them, so an upstream schema change is
 absorbed in one place instead of rippling through components.
+
+## Headless APIs
+
+`database`, `ai`, and `scrapers` each expose a WinterCG `api.ts` that runs
+unchanged in a container or on Cloudflare Workers — see [`deploy/`](../../deploy).
+`npm run check:arch` fails the build if one gains a Node builtin, an npm
+dependency, or a path alias.
 
 ## Status
 

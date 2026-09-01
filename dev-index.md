@@ -453,3 +453,86 @@ Item 80. Full verification: `astro check` 0 errors across 35 files, architecture
          6 contracts pure, no cycles), production build clean, and the behavioural suite re-run at 29/29 —
          including the new anomaly-detector cases and assertions that the engine's tolerance matches the
          contract's rule spec.
+
+## Phase 19 — uPlot Price History Drawer (done)
+
+Item 81. Added `src/lib/priceChart.ts` — a thin uPlot wrapper themed to the terminal/zinc aesthetic: emerald
+         (`#34d399`) price line with a translucent fill, zinc-800 (`#27272a`) grid and ticks, monospace axis
+         labels, currency-formatted y-axis, and a live legend. Deliberately thin — uPlot's value is its
+         zero-overhead canvas rendering, so the wrapper adds theming and data mapping and nothing else.
+Item 82. `toUplotSeries()` maps the contract's `PricePointTuple[]` into uPlot's parallel-array format, handling
+         two things that would otherwise render silently-wrong charts: the contracts carry **milliseconds** while
+         uPlot's time scale works in **seconds**, and uPlot requires x ascending, so the series is sorted rather
+         than trusting the caller. Non-finite pairs are dropped so one bad observation can't break the plot.
+Item 83. Named the wrapper's parameter `observations` as the brief specifies. Note the contract field on
+         `HardwareComponent` is `historicalPrices`; `observations` is the field name on `HardwarePriceSeries` in
+         `database/schemas.ts`. The parameter name reconciles the two without inventing a field on the contract.
+Item 84. Added `src/components/PriceDrawer.astro` (markup) and `src/lib/priceDrawer.ts` (behaviour) — a right-hand
+         sliding drawer replacing the previous centred modal. Shows the component name, SKU, and a stat grid
+         (median market price, MSRP, fair value, spec, TDP), with the median tinted when it sits above fair value.
+Item 85. Accessibility, since the drawer is a dialog and table rows are now interactive: `role="dialog"` +
+         `aria-modal`, focus moved to the close button on open and restored to the invoking row on close, Tab
+         trapped inside the panel, Escape and scrim-click to close, and rows given `tabindex="0"`, `role="button"`
+         and an `aria-label` so they are operable by keyboard, not mouse only.
+Item 86. `.drawer[hidden] { display: none }` is declared explicitly — the same trap fixed in Item 11: a
+         class-level `display` ties with the UA `[hidden]` rule on specificity and wins on source order, so the
+         attribute alone would not hide it. The slide transition is disabled under `prefers-reduced-motion`.
+Item 87. Chart width is measured from the panel and kept correct by a `ResizeObserver` plus a window resize
+         listener; the chart instance is destroyed on close so no canvas or observer leaks across opens.
+Item 88. Removed the superseded `lib/chartModal.ts` and `components/PriceChartModal.astro`; verified zero
+         references to either remain in the built output.
+Item 89. Verified the data path against the real dataset rather than by inspection: 13/13 assertions covering
+         ms→s conversion, unsorted input being sorted, NaN/Infinity dropped, parallel arrays staying aligned,
+         and `mock-data.json → toHardwareComponent → toUplotSeries` producing 12 ascending points per component
+         whose y-values match the source file — plus the theme constants being the requested palette.
+Item 90. `npm run check` passes (architecture: 20 files scanned, 6 contracts pure, no cycles; `astro check`:
+         0 errors across 36 files). Build clean; the drawer markup ships hidden by default, and the page plus
+         every referenced asset serves 200.
+Item 91. **Not verified: the visual result.** There is no browser or driver in this environment, so the chart has
+         not been rendered — only its data mapping, bundling, and markup were checked. The drawer needs a click
+         through in a real browser before it is called done.
+
+## Phase 20 — Hybrid Server + Serverless Module APIs (done)
+
+Item 92. Added WinterCG entry points `src/modules/{database,ai,scrapers}/api.ts`: standard `Request` in,
+         standard `Response` out, upstream read with standard `fetch`. No `node:*` builtins, no npm
+         dependencies, no filesystem, no framework — so the identical file runs on Node, Bun, Deno, and
+         Cloudflare Workers. Each exports both `handleRequest` (for direct testing) and
+         `default { fetch }` (the Workers contract).
+Item 93. Imports inside `api.ts` are deliberately RELATIVE, never the `@modules/*` alias — wrangler and Bun
+         resolve relative specifiers with no extra configuration, and an alias would only work in the Astro
+         build.
+Item 94. Added `src/lib/http.ts`: runtime-agnostic helpers (JSON responses, RFC-style errors, body parsing,
+         CORS + preflight, and an error boundary so an unexpected throw returns JSON rather than a
+         runtime-specific HTML page). It imports nothing, so vendoring it with a module at split time is a copy.
+Item 95. Implemented what the APIs needed, since three contracts had no implementation:
+         `database/validate.ts` (validates against `HARDWARE_CONSTRAINTS`, collecting every issue rather than
+         failing on the first), `scrapers/sanitize.ts` (enforces the §2 whitelist at runtime; a rejected record
+         yields no payload at all, so partial ingestion is impossible), and `ai/engine.ts#scoreFairValue`
+         (completing `FairValueScorer`).
+Item 96. Dual deployment per module: `deploy/<module>/Dockerfile` (Bun on Alpine, non-root, `HEALTHCHECK`
+         against the handler's own `/health`) and `deploy/<module>/wrangler.toml` pointing `main` at the same
+         `api.ts`. `deploy/<module>/server.ts` is the only runtime-specific file in the whole deployment — a
+         five-line `Bun.serve` bootstrap. No `nodejs_compat` flag anywhere: if one were needed, the handler
+         would have stopped being portable.
+Item 97. Extended `scripts/check-architecture.mjs` with a third invariant — every `api.ts` must be free of
+         `node:*` builtins, npm dependencies, and path aliases. A Node import type-checks fine and then fails
+         only once deployed to Workers, which is far too late to discover it.
+Item 98. Verified the guard by breaking it three ways on purpose (Node builtin, npm dependency, alias import),
+         confirming each is caught with a specific message, then restoring.
+Item 99. Verified the handlers directly — being plain functions, they need no server: 34/34 assertions across
+         all three modules, covering happy paths, 404/405/415/400/422 error paths, CORS preflight and restricted
+         origins, upstream normalization, and the security-relevant rejections (a PII field, a stringified
+         price, an unwhitelisted store).
+Item 100. Verified the container path for real rather than by inspection: built the image with Docker, ran it,
+          and got correct live responses from `/health` and `/score`; Docker reported the `HEALTHCHECK` as
+          `healthy` (exit 0); all three images build; final image ~132 MB with no `node_modules`.
+Item 101. Verified Workers portability as far as is possible without deploying: `esbuild --platform=neutral`
+          bundles all three handlers cleanly, which fails if any Node builtin is reachable. **Not verified: an
+          actual `wrangler deploy`** — that needs Cloudflare credentials this environment does not have.
+Item 102. Behaviour worth keeping: `database` returns **502 with the upstream URL** when the market-database
+          repo has published nothing, rather than an empty list that would look like real data. Confirmed live
+          from the running container against the real (still unpublished) upstream.
+Item 103. The API code is tree-shaken out of the portal bundle — confirmed zero API strings in `dist/_astro`.
+          `npm run check` passes (26 files, 6 contracts pure, 3 handlers portable, no cycles; 0 type errors
+          across 42 files) and the site build is clean.

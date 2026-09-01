@@ -17,4 +17,11 @@ module itself lives in its own repository; nothing here is a copy of it.
   mandatory `rateLimitMs` and `respectsRobotsTxt: true`), and the sanitization pipeline
   (`SanitizationResult`, `SanitizationRejectionCode`, `ScraperWorker`).
 
-No runtime implementation yet — this module publishes nothing the portal consumes so far.
+
+## Headless API
+
+`api.ts` — WinterCG handler (`GET /health`, `GET /whitelist`, `POST /sanitize`,
+`POST /sanitize/batch`), backed by `sanitize.ts`, which enforces the whitelist at
+runtime. This service sanitizes only; it does not crawl — crawling belongs in a
+container with egress control and rate limiting, not on the edge.
+Deploy via `deploy/scrapers/`.

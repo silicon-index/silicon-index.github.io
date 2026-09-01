@@ -1,0 +1,10 @@
+# Keep the build context small: the module APIs need only src/ and deploy/.
+node_modules
+dist
+.astro
+.git
+.github
+legacy-static
+public
+scripts
+*.md

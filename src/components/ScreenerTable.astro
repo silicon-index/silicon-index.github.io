@@ -76,7 +76,7 @@
       </div>
 
       <p id="empty-state" class="empty-state" hidden>No components match the current filters.</p>
-      <p class="text-[11px] text-text-faint mt-2">Click a row to open its 12-month price chart.</p>
+      <p class="text-[11px] text-text-faint mt-2">Select a row (click or press Enter) to open its price history.</p>
     </section>
   </main>
 </div>
@@ -85,7 +85,7 @@
   import { fetchMarketData } from "@/services/dataService";
   import type { HardwareComponent } from "@modules/database/contracts";
   import { formatPrice, escapeHtml } from "@/lib/format";
-  import { openChartModal } from "@/lib/chartModal";
+  import { openPriceDrawer } from "@/lib/priceDrawer";
 
   interface State {
     all: HardwareComponent[];
@@ -185,9 +185,17 @@
     els.tableBody.innerHTML = filtered.map(renderRow).join("");
 
     els.tableBody.querySelectorAll<HTMLTableRowElement>("tr[data-id]").forEach((row) => {
-      row.addEventListener("click", () => {
+      const open = () => {
         const item = state.all.find((i) => i.sku === row.getAttribute("data-id"));
-        if (item) openChartModal(item);
+        if (item) openPriceDrawer(item);
+      };
+      row.addEventListener("click", open);
+      // The row is interactive, so it must be reachable and operable by keyboard.
+      row.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          open();
+        }
       });
     });
   }
@@ -200,7 +208,7 @@
       : '<span class="badge badge-fair"><span class="badge-dot"></span>Fair Priced</span>';
 
     return (
-      `<tr data-id="${escapeHtml(item.sku)}" data-row-clickable>` +
+      `<tr data-id="${escapeHtml(item.sku)}" data-row-clickable tabindex="0" role="button" aria-label="Show price history for ${escapeHtml(item.name)}">` +
       `<td><span class="component-name">${escapeHtml(item.name)}</span>` +
       `<span class="component-category">${escapeHtml(item.category)}</span></td>` +
       `<td><span class="spec-meta">${escapeHtml(item.socket)} · ${escapeHtml(item.generation)}</span> ` +

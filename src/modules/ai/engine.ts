@@ -12,7 +12,13 @@
 
 import type { HardwareComponent } from "../database/contracts";
 import type { PriceSubmission } from "../contributors/contracts";
-import type { AnomalyDetectionInput, AnomalyDetectionOutput, AutoAcceptDecision } from "./contracts";
+import type {
+  AnomalyDetectionInput,
+  AnomalyDetectionOutput,
+  AutoAcceptDecision,
+  FairValueInput,
+  FairValueOutput
+} from "./contracts";
 import { AUTO_ACCEPT_RULES } from "../admin/contracts";
 
 /** Tolerance comes from the rule spec in `admin/contracts.ts`. */
@@ -26,6 +32,25 @@ export function median(values: number[]): number | null {
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+}
+
+/**
+ * Fair-value scoring — implements `FairValueScorer` from `./contracts.ts`.
+ *
+ * Deterministic and vendor-neutral (DEV-GUIDE.md §1): the score is the
+ * component's own moving median, anchored to MSRP when no observations exist.
+ * `basis` is returned alongside so any score can be audited back to the
+ * numbers that produced it.
+ */
+export function scoreFairValue(input: FairValueInput): FairValueOutput {
+  const prices = input.historicalPrices.map(([, price]) => price).filter((p) => Number.isFinite(p));
+  const movingMedian = median(prices);
+
+  return {
+    sku: input.sku,
+    fairValueScore: movingMedian === null ? input.msrp : Math.round(movingMedian),
+    basis: { movingMedian, observationCount: prices.length }
+  };
 }
 
 /**

@@ -17,3 +17,9 @@ module itself lives in its own repository; nothing here is a copy of it.
 - `engine.ts` — implements them: `median()`, `detectAnomaly()`, `evaluateAutoAccept()`.
   Tolerance is read from `AUTO_ACCEPT_RULES` in `admin/contracts.ts`, so the rule set has
   exactly one definition.
+
+## Headless API
+
+`api.ts` — WinterCG handler (`GET /health`, `POST /score`, `POST /detect-anomaly`,
+`POST /auto-accept`), backed by `engine.ts`. Pure computation with no upstream fetch,
+so this is the strongest edge candidate. Deploy via `deploy/ai/`.

@@ -1,0 +1,20 @@
+# AI Models API — Cloudflare Workers deployment.
+#
+# Deploys the SAME handler the Docker image serves:
+#   src/modules/ai/api.ts
+#
+# Pure computation with no upstream fetch and no state, so this module is the
+# strongest edge candidate of the three.
+#
+#   npx wrangler dev    --config deploy/ai/wrangler.toml
+#   npx wrangler deploy --config deploy/ai/wrangler.toml
+
+name = "silicon-index-ai-api"
+main = "../../src/modules/ai/api.ts"
+compatibility_date = "2025-01-01"
+
+[vars]
+ALLOWED_ORIGINS = "*"
+
+[observability]
+enabled = true

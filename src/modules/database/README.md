@@ -16,3 +16,9 @@ module itself lives in its own repository; nothing here is a copy of it.
   (`FieldConstraint`, `HARDWARE_CONSTRAINTS`, `ValidationResult`).
 - `adapters.ts` — `toHardwareComponent()`, `normalizeSku()`, `isHardwareComponentArray()`.
 - `schemas.ts` — upstream `HardwareSchema` (brand/model/`releaseDate`) plus an adapter.
+
+## Headless API
+
+`api.ts` — WinterCG handler (`GET /health`, `GET /components`, `GET /components/:sku`,
+`POST /validate`), backed by `validate.ts`. Deploy via `deploy/database/`
+(Dockerfile for Coolify, wrangler.toml for Cloudflare Workers).

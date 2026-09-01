@@ -10,6 +10,9 @@
  *      along, which defeats the decoupling.
  *   2. The import graph is acyclic. TypeScript compiles cyclic imports
  *      happily; they fail at runtime as undefined bindings.
+ *   3. Every `api.ts` is WinterCG-portable — no `node:*` builtin and no npm
+ *      dependency. A Node import type-checks fine and then fails only once
+ *      deployed to Cloudflare Workers, which is far too late to find out.
  *
  * Usage: node scripts/check-architecture.mjs   (exit 1 on violation)
  */
@@ -58,6 +61,18 @@ for (const file of files) {
     if (file.endsWith("contracts.ts") && !isTypeOnly) {
       violations.push(`${file}: runtime import of "${m[3]}" — contracts must be type-only`);
     }
+
+    if (file.endsWith("api.ts")) {
+      const spec = m[3];
+      const isRelative = spec.startsWith(".");
+      if (spec.startsWith("node:")) {
+        violations.push(`${file}: imports Node builtin "${spec}" — API handlers must run on Cloudflare Workers`);
+      } else if (!isRelative && !isTypeOnly) {
+        violations.push(`${file}: runtime dependency on "${spec}" — API handlers must stay dependency-free`);
+      } else if (spec.startsWith("@modules/") || spec.startsWith("@/")) {
+        violations.push(`${file}: alias import "${spec}" — use a relative path so wrangler and Bun resolve it`);
+      }
+    }
   }
   graph.set(file, deps);
 }
@@ -86,5 +101,6 @@ if (violations.length) {
 }
 
 const contracts = files.filter((f) => f.endsWith("contracts.ts"));
-console.log(`Architecture check passed — ${files.length} modules scanned, ` +
-            `${contracts.length} contract files pure, no import cycles.`);
+const apis = files.filter((f) => f.endsWith("api.ts"));
+console.log(`Architecture check passed — ${files.length} files scanned, ` +
+            `${contracts.length} contracts pure, ${apis.length} API handlers portable, no import cycles.`);
