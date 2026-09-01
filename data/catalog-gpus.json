@@ -1,0 +1,19 @@
+[
+  { "name": "RIVA TNT2", "category": "graphics card", "manufacturer": "NVIDIA", "releaseYear": 1999,
+    "originalMSRP": 179, "currency": "USD", "specs": { "vramGb": 0.032, "vramType": "SDR", "generation": "TNT2" } },
+  { "name": "GeForce 8800 GTX", "category": "GPU", "manufacturer": "NVIDIA", "releaseYear": 2006,
+    "originalMSRP": 599, "currency": "USD", "specs": { "vramGb": 0.768, "cudaCores": 128, "tdpWatts": 155 } },
+  { "name": "Radeon HD 5870", "category": "video card", "manufacturer": "AMD", "releaseYear": 2009,
+    "originalMSRP": 379, "currency": "USD", "specs": { "vramGb": 1, "streamProcessors": 1600 } },
+
+  { "name": "Voodoo 2", "category": "3dfx accelerator", "manufacturer": "3dfx", "releaseYear": 1998,
+    "originalMSRP": 299, "currency": "USD", "specs": {} },
+  { "name": "Mystery Card", "category": "GPU", "manufacturer": "", "releaseYear": 2021,
+    "originalMSRP": 100, "currency": "USD", "specs": {} },
+  { "name": "Time Traveller", "category": "GPU", "manufacturer": "Acme", "releaseYear": 1974,
+    "originalMSRP": 50, "currency": "USD", "specs": {} },
+  { "name": "Nested Junk", "category": "GPU", "manufacturer": "Acme", "releaseYear": 2020,
+    "originalMSRP": 50, "currency": "USD", "specs": { "seller": { "name": "Bob" } } },
+  { "name": "GeForce 8800 GTX", "category": "GPU", "manufacturer": "NVIDIA", "releaseYear": 2006,
+    "originalMSRP": 599, "currency": "USD", "specs": {} }
+]

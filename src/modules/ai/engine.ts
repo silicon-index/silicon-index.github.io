@@ -48,7 +48,7 @@ export function scoreFairValue(input: FairValueInput): FairValueOutput {
 
   return {
     sku: input.sku,
-    fairValueScore: movingMedian === null ? input.msrp : Math.round(movingMedian),
+    fairValueScore: movingMedian === null ? (input.msrp ?? 0) : Math.round(movingMedian),
     basis: { movingMedian, observationCount: prices.length }
   };
 }

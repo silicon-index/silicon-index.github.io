@@ -536,3 +536,56 @@ Item 102. Behaviour worth keeping: `database` returns **502 with the upstream UR
 Item 103. The API code is tree-shaken out of the portal bundle — confirmed zero API strings in `dist/_astro`.
           `npm run check` passes (26 files, 6 contracts pure, 3 handlers portable, no cycles; 0 type errors
           across 42 files) and the site build is clean.
+
+## Phase 21 — Catalogue Base Template & Bulk Ingestion (done)
+
+Item 104. Split the data model in `database/contracts.ts` along the line that matters for a 1990–2026 catalogue:
+          `CatalogComponent` is the universal **base template** (identity, `manufacturer`, `releaseYear`,
+          `originalMSRP`, `specs`), and `HardwareComponent` extends it with **market state** (median price,
+          series, fair value). A 1994 CPU has a permanent identity but may have no live market data at all;
+          conflating the two would make a missing price look like a defective record.
+Item 105. `category` became the closed union `CPU | GPU | RAM | MOBO | STORAGE`, with `CATEGORY_ALIASES` so
+          historical datasets spelling it "processor", "graphics card", or "motherboard" normalize on ingest.
+          `originalMSRP` is `number | null` — plenty of vintage parts have no documented launch price, and 0
+          would be a lie.
+Item 106. Category-specific details live in an open `specs: Record<string, SpecValue>`, where `SpecValue` is
+          restricted to primitives. Keys stay open so "CUDA cores" or "Infinity Fabric clock" need no code
+          change; shapes do not, because nested objects are exactly where unvalidated blobs and free text would
+          re-enter the catalogue. Documented shapes (`CpuSpecs`, `GpuSpecs`, `RamSpecs`, `MoboSpecs`,
+          `StorageSpecs`) plus a `specsAs<T>()` view give type-safe reads without closing the bag.
+Item 107. Migrated the whole codebase off the old flat fields: `msrp` → `originalMSRP`, and
+          `socket`/`generation`/`tdpWatts` into `specs`. Touched `mock-data.json`, `adapters.ts`, `schemas.ts`,
+          `validate.ts`, `ai/contracts.ts`, `ai/engine.ts`, `ScreenerTable.astro`, and `priceDrawer.ts`.
+          `schemas.ts#toHardwareComponent` now returns `null` for an unrecognized upstream category rather than
+          guessing and silently misfiling a part.
+Item 108. Added `database/ingest.ts` — pure, dependency-free bulk ingestion: an RFC 4180 CSV reader (quoted
+          fields, escaped quotes, embedded newlines, CRLF), category normalization, SKU derivation, primitive
+          coercion, per-row validation, and cross-row de-duplication.
+Item 109. Added `scripts/seed-catalog.ts`, the I/O shell: multi-file input, `--out`, `--report`, `--dry-run`,
+          `--strict`, a per-file and overall summary, and cross-file SKU de-duplication. All logic lives in the
+          module so it is type-checked and unit tested; the CLI only does filesystem work — the same split used
+          for the module APIs and their container bootstraps.
+Item 110. The `scrapers` module was **not** touched, as required. Verified with `git status`: catalogue identity
+          is bulk-ingested by `database`, and `scrapers` stays dedicated to live pricing from whitelisted stores.
+Item 111. Found and fixed a real defect while testing: `extractSpecs` coerced a nested object to `null` and
+          dropped it, so a row carrying `specs: { seller: { name: "Bob" } }` was **accepted as clean**. Non-
+          primitives are now preserved verbatim so validation rejects the row by name
+          (`specs.seller: Spec values must be string, number, boolean, or null`). Silently discarding
+          prohibited data is precisely the failure mode the whitelist rule exists to prevent.
+Item 112. Hardened `numberOrNull` against stray quotes (`"$1,981"`), since JSON sources and hand-edited files
+          carry them even though the CSV parser strips them.
+Item 113. **The `*/` comment trap bit a third time** — `deploy/*/server.ts` inside the CLI's header terminated
+          the block comment, and everything after parsed as code. `tsc` missed it because `scripts/` was outside
+          `tsconfig`. Two durable fixes: `scripts/**/*.ts` is now type-checked, and
+          `check-architecture.mjs` gained a fourth invariant that flags a `*/` appearing mid-line on a JSDoc
+          continuation line. Added the guard **before** fixing the bug, and confirmed it caught the live case.
+Item 114. Node's native type stripping cannot run the CLI: the repo uses extensionless relative imports, which
+          it rejects. Documented `npm run seed:catalog` (vite-node, now a real devDependency) as the invocation
+          rather than leaving a `node scripts/…` line that does not work.
+Item 115. Verified: 49 assertions over ingestion — CSV quoting/newlines/CRLF, category aliases, coercion, the
+          `spec_` extension point, MSRP parsing, pre-1990 and future-year bounds, nested-spec rejection,
+          all-issues-collected, SKU derivation vs. explicit SKU, de-duplication, deterministic ordering, and
+          that every existing `mock-data.json` record still adapts and validates. Ran the seeder end to end on
+          real 1993–2022 sample data (13 rows → 8 catalogued, 5 rejected with reasons). `npm run check` clean
+          (28 files, 6 contracts pure, 3 handlers portable, no cycles; 0 type errors across 44 files); site
+          build clean.

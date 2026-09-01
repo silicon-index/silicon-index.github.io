@@ -21,7 +21,8 @@ import type { PriceSubmission } from "../contributors/contracts";
  */
 export interface FairValueInput {
   sku: string;
-  msrp: number;
+  /** Launch MSRP; null when no launch price is documented. */
+  msrp: number | null;
   /** Chronological observations, oldest first. */
   historicalPrices: PricePointTuple[];
   releaseYear: number;

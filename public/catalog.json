@@ -1,0 +1,118 @@
+[
+  {
+    "sku": "cpu_pentium_60",
+    "name": "Pentium 60",
+    "category": "CPU",
+    "manufacturer": "Intel",
+    "releaseYear": 1993,
+    "originalMSRP": 878,
+    "currency": "USD",
+    "specs": {
+      "socket": "Socket 4",
+      "generation": "P5",
+      "cores": 1,
+      "tdpWatts": 14
+    }
+  },
+  {
+    "sku": "cpu_pentium_ii_300",
+    "name": "Pentium II 300",
+    "category": "CPU",
+    "manufacturer": "Intel",
+    "releaseYear": 1997,
+    "originalMSRP": 1981,
+    "currency": "USD",
+    "specs": {
+      "socket": "Slot 1",
+      "generation": "Klamath",
+      "cores": 1,
+      "tdpWatts": 43
+    }
+  },
+  {
+    "sku": "cpu_athlon_64_3200",
+    "name": "Athlon 64 3200+",
+    "category": "CPU",
+    "manufacturer": "AMD",
+    "releaseYear": 2003,
+    "originalMSRP": 417,
+    "currency": "USD",
+    "specs": {
+      "socket": "Socket 754",
+      "generation": "K8",
+      "cores": 1,
+      "tdpWatts": 89
+    }
+  },
+  {
+    "sku": "cpu_core_2_duo_e6600",
+    "name": "Core 2 Duo E6600",
+    "category": "CPU",
+    "manufacturer": "Intel",
+    "releaseYear": 2006,
+    "originalMSRP": 316,
+    "currency": "USD",
+    "specs": {
+      "socket": "LGA775",
+      "generation": "Conroe",
+      "cores": 2,
+      "tdpWatts": 65
+    }
+  },
+  {
+    "sku": "cpu_ryzen_7_5800x3d",
+    "name": "Ryzen 7 5800X3D",
+    "category": "CPU",
+    "manufacturer": "AMD",
+    "releaseYear": 2022,
+    "originalMSRP": 449,
+    "currency": "USD",
+    "specs": {
+      "socket": "AM4",
+      "generation": "Zen 3",
+      "cores": 8,
+      "tdpWatts": 105
+    }
+  },
+  {
+    "sku": "gpu_riva_tnt2",
+    "name": "RIVA TNT2",
+    "category": "GPU",
+    "manufacturer": "NVIDIA",
+    "releaseYear": 1999,
+    "originalMSRP": 179,
+    "currency": "USD",
+    "specs": {
+      "vramGb": 0.032,
+      "vramType": "SDR",
+      "generation": "TNT2"
+    }
+  },
+  {
+    "sku": "gpu_geforce_8800_gtx",
+    "name": "GeForce 8800 GTX",
+    "category": "GPU",
+    "manufacturer": "NVIDIA",
+    "releaseYear": 2006,
+    "originalMSRP": 599,
+    "currency": "USD",
+    "specs": {
+      "vramGb": 0.768,
+      "cudaCores": 128,
+      "tdpWatts": 155
+    }
+  },
+  {
+    "sku": "gpu_radeon_hd_5870",
+    "name": "Radeon HD 5870",
+    "category": "GPU",
+    "manufacturer": "AMD",
+    "releaseYear": 2009,
+    "originalMSRP": 379,
+    "currency": "USD",
+    "specs": {
+      "vramGb": 1,
+      "streamProcessors": 1600
+    }
+  }
+]

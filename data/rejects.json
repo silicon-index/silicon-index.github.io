@@ -1,0 +1,64 @@
+{
+  "totalRows": 13,
+  "rejected": [
+    {
+      "row": 4,
+      "sku": null,
+      "issues": [
+        {
+          "field": "sku",
+          "message": "Must be a non-empty string."
+        },
+        {
+          "field": "category",
+          "message": "Must be one of: CPU, GPU, RAM, MOBO, STORAGE."
+        }
+      ],
+      "source": "data/catalog-gpus.json"
+    },
+    {
+      "row": 5,
+      "sku": "gpu_mystery_card",
+      "issues": [
+        {
+          "field": "manufacturer",
+          "message": "Must be a non-empty string."
+        }
+      ],
+      "source": "data/catalog-gpus.json"
+    },
+    {
+      "row": 6,
+      "sku": "gpu_time_traveller",
+      "issues": [
+        {
+          "field": "releaseYear",
+          "message": "Must be >= 1990."
+        }
+      ],
+      "source": "data/catalog-gpus.json"
+    },
+    {
+      "row": 7,
+      "sku": "gpu_nested_junk",
+      "issues": [
+        {
+          "field": "specs.seller",
+          "message": "Spec values must be string, number, boolean, or null."
+        }
+      ],
+      "source": "data/catalog-gpus.json"
+    },
+    {
+      "row": 8,
+      "sku": "gpu_geforce_8800_gtx",
+      "issues": [
+        {
+          "field": "sku",
+          "message": "Duplicate SKU; first occurrence kept."
+        }
+      ],
+      "source": "data/catalog-gpus.json"
+    }
+  ]
+}

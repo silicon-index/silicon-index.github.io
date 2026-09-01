@@ -7,7 +7,7 @@
  * `openPriceDrawer(component)`.
  */
 
-import type { HardwareComponent } from "@modules/database/contracts";
+import { specsAs, type CpuSpecs, type HardwareComponent } from "@modules/database/contracts";
 import { createPriceChart, type PriceChartHandle } from "./priceChart";
 import { formatPrice } from "./format";
 
@@ -60,12 +60,17 @@ export function openPriceDrawer(component: HardwareComponent): void {
   els.sku.textContent = component.sku;
 
   const overMedian = component.medianMarketPrice > component.fairValueScore;
+  const specs = specsAs<CpuSpecs>(component);
+  const spec = [specs.socket, specs.generation].filter(Boolean).join(" · ");
+
   els.stats.innerHTML = [
     statChip("Median market", formatPrice(component.medianMarketPrice, component.currency), overMedian),
-    statChip("MSRP", formatPrice(component.msrp, component.currency)),
+    // Historical parts may have no documented launch price.
+    statChip("MSRP", component.originalMSRP === null ? "—" : formatPrice(component.originalMSRP, component.currency)),
     statChip("Fair value", formatPrice(component.fairValueScore, component.currency)),
-    statChip("Spec", `${component.socket} · ${component.generation}`),
-    statChip("TDP", `${component.tdpWatts}W`)
+    statChip("Manufacturer", component.manufacturer),
+    ...(spec ? [statChip("Spec", spec)] : []),
+    ...(specs.tdpWatts ? [statChip("TDP", `${specs.tdpWatts}W`)] : [])
   ].join("");
 
   // Reveal before measuring: a hidden element has zero width.

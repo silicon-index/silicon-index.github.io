@@ -3,14 +3,17 @@
     "id": "cpu_amd_ryzen7_7800x3d",
     "name": "AMD Ryzen 7 7800X3D",
     "category": "CPU",
-    "socket": "AM5",
-    "generation": "Zen 4",
+    "manufacturer": "AMD",
     "releaseYear": 2023,
-    "tdpWatts": 120,
-    "msrp": 449,
+    "originalMSRP": 449,
     "fairValueScore": 389,
     "marketPrice": 449,
     "currency": "USD",
+    "specs": {
+      "socket": "AM5",
+      "generation": "Zen 4",
+      "tdpWatts": 120
+    },
     "priceHistory": [
       {
         "month": "2025-10",
@@ -66,14 +69,17 @@
     "id": "cpu_intel_i9_14900k",
     "name": "Intel Core i9-14900K",
     "category": "CPU",
-    "socket": "LGA1700",
-    "generation": "Raptor Lake Refresh",
+    "manufacturer": "Intel",
     "releaseYear": 2023,
-    "tdpWatts": 253,
-    "msrp": 589,
+    "originalMSRP": 589,
     "fairValueScore": 419,
     "marketPrice": 402,
     "currency": "USD",
+    "specs": {
+      "socket": "LGA1700",
+      "generation": "Raptor Lake Refresh",
+      "tdpWatts": 253
+    },
     "priceHistory": [
       {
         "month": "2025-10",
@@ -129,14 +135,17 @@
     "id": "gpu_nvidia_rtx_4070",
     "name": "NVIDIA GeForce RTX 4070",
     "category": "GPU",
-    "socket": "PCIe 4.0 x16",
-    "generation": "Ada Lovelace",
+    "manufacturer": "NVIDIA",
     "releaseYear": 2023,
-    "tdpWatts": 200,
-    "msrp": 599,
+    "originalMSRP": 599,
     "fairValueScore": 549,
     "marketPrice": 599,
     "currency": "USD",
+    "specs": {
+      "socket": "PCIe 4.0 x16",
+      "generation": "Ada Lovelace",
+      "tdpWatts": 200
+    },
     "priceHistory": [
       {
         "month": "2025-10",
@@ -192,14 +201,17 @@
     "id": "gpu_amd_rx_7800xt",
     "name": "AMD Radeon RX 7800 XT",
     "category": "GPU",
-    "socket": "PCIe 4.0 x16",
-    "generation": "RDNA 3",
+    "manufacturer": "AMD",
     "releaseYear": 2023,
-    "tdpWatts": 263,
-    "msrp": 499,
+    "originalMSRP": 499,
     "fairValueScore": 479,
     "marketPrice": 461,
     "currency": "USD",
+    "specs": {
+      "socket": "PCIe 4.0 x16",
+      "generation": "RDNA 3",
+      "tdpWatts": 263
+    },
     "priceHistory": [
       {
         "month": "2025-10",
@@ -255,14 +267,17 @@
     "id": "cpu_amd_ryzen5_5600",
     "name": "AMD Ryzen 5 5600",
     "category": "CPU",
-    "socket": "AM4",
-    "generation": "Zen 3",
+    "manufacturer": "AMD",
     "releaseYear": 2022,
-    "tdpWatts": 65,
-    "msrp": 199,
+    "originalMSRP": 199,
     "fairValueScore": 129,
     "marketPrice": 119,
     "currency": "USD",
+    "specs": {
+      "socket": "AM4",
+      "generation": "Zen 3",
+      "tdpWatts": 65
+    },
     "priceHistory": [
       {
         "month": "2025-10",
@@ -318,14 +333,17 @@
     "id": "gpu_nvidia_rtx_4090",
     "name": "NVIDIA GeForce RTX 4090",
     "category": "GPU",
-    "socket": "PCIe 4.0 x16",
-    "generation": "Ada Lovelace",
+    "manufacturer": "NVIDIA",
     "releaseYear": 2022,
-    "tdpWatts": 450,
-    "msrp": 1599,
+    "originalMSRP": 1599,
     "fairValueScore": 1599,
     "marketPrice": 1899,
     "currency": "USD",
+    "specs": {
+      "socket": "PCIe 4.0 x16",
+      "generation": "Ada Lovelace",
+      "tdpWatts": 450
+    },
     "priceHistory": [
       {
         "month": "2025-10",
@@ -380,15 +398,18 @@
   {
     "id": "mobo_asus_rog_x670e",
     "name": "ASUS ROG Crosshair X670E Hero",
-    "category": "Motherboard",
-    "socket": "AM5",
-    "generation": "X670E",
+    "category": "MOBO",
+    "manufacturer": "ASUS",
     "releaseYear": 2022,
-    "tdpWatts": null,
-    "msrp": 699,
+    "originalMSRP": 699,
     "fairValueScore": 479,
     "marketPrice": 469,
     "currency": "USD",
+    "specs": {
+      "socket": "AM5",
+      "generation": "X670E",
+      "tdpWatts": null
+    },
     "priceHistory": [
       {
         "month": "2025-10",
@@ -444,14 +465,17 @@
     "id": "cpu_amd_ryzen9_9950x",
     "name": "AMD Ryzen 9 9950X",
     "category": "CPU",
-    "socket": "AM5",
-    "generation": "Zen 5",
+    "manufacturer": "AMD",
     "releaseYear": 2024,
-    "tdpWatts": 170,
-    "msrp": 649,
+    "originalMSRP": 649,
     "fairValueScore": 599,
     "marketPrice": 649,
     "currency": "USD",
+    "specs": {
+      "socket": "AM5",
+      "generation": "Zen 5",
+      "tdpWatts": 170
+    },
     "priceHistory": [
       {
         "month": "2025-10",

@@ -13,6 +13,10 @@
  *   3. Every `api.ts` is WinterCG-portable — no `node:*` builtin and no npm
  *      dependency. A Node import type-checks fine and then fails only once
  *      deployed to Cloudflare Workers, which is far too late to find out.
+ *   4. No block comment is terminated early. Writing a glob such as
+ *      `modules/<star>/api.ts` inside a JSDoc block closes it at the `*` + `/`,
+ *      and everything after is parsed as code. tsc catches this only for files
+ *      it type-checks, so a script outside tsconfig fails at runtime instead.
  *
  * Usage: node scripts/check-architecture.mjs   (exit 1 on violation)
  */
@@ -45,13 +49,28 @@ function resolveSpec(spec, fromFile) {
   return null;
 }
 
-const files = await walk(SRC);
+// Scripts are scanned too: they are outside tsconfig, so nothing else checks them.
+const files = [...(await walk(SRC)), ...(await walk("scripts")).filter((f) => f.endsWith(".ts"))];
 const graph = new Map();
 const violations = [];
 
 for (const file of files) {
   const source = readFileSync(file, "utf8");
   const deps = new Set();
+
+  // A JSDoc continuation line (` * ...`) whose `*/` is not the end of the line
+  // has closed the comment early — the rest of the prose becomes code.
+  source.split("\n").forEach((line, index) => {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("*") || trimmed.startsWith("*/")) return;
+    const at = trimmed.indexOf("*/");
+    if (at !== -1 && at !== trimmed.length - 2) {
+      violations.push(
+        `${file}:${index + 1}: block comment terminated early by "*/" — ` +
+        `rewrite the glob (e.g. "modules/<id>/api.ts")`
+      );
+    }
+  });
 
   for (const m of source.matchAll(/^import\s+(type\s+)?([^\n]*?)from\s+"([^"]+)"/gm)) {
     const isTypeOnly = Boolean(m[1]) || /^\s*\{\s*type\s/.test(m[2]);

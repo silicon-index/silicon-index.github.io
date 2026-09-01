@@ -13,10 +13,11 @@ import {
   type ValidationResult
 } from "./contracts";
 
-function typeOf(value: unknown): "string" | "number" | "array" | "other" {
+function typeOf(value: unknown): "string" | "number" | "array" | "object" | "other" {
   if (typeof value === "string") return "string";
   if (typeof value === "number") return "number";
   if (Array.isArray(value)) return "array";
+  if (value !== null && typeof value === "object") return "object";
   return "other";
 }
 
@@ -37,6 +38,7 @@ export function validateHardwareComponent(candidate: unknown): ValidationResult 
   for (const constraint of HARDWARE_CONSTRAINTS) {
     const value = record[constraint.field];
 
+    if (value === null && constraint.nullable) continue;
     if (value === undefined || value === null) {
       if (constraint.required) issues.push({ field: constraint.field, message: "Field is required." });
       continue;
@@ -57,8 +59,13 @@ export function validateHardwareComponent(candidate: unknown): ValidationResult 
       }
     }
 
-    if (constraint.type === "string" && (value as string).trim() === "") {
-      issues.push({ field: constraint.field, message: "Must not be empty." });
+    if (constraint.type === "string") {
+      const text = value as string;
+      if (text.trim() === "") {
+        issues.push({ field: constraint.field, message: "Must not be empty." });
+      } else if (constraint.oneOf && !constraint.oneOf.includes(text)) {
+        issues.push({ field: constraint.field, message: `Must be one of: ${constraint.oneOf.join(", ")}.` });
+      }
     }
   }
 

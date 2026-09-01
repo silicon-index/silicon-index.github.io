@@ -1,0 +1,6 @@
+name,category,manufacturer,releaseYear,originalMSRP,currency,spec_socket,spec_generation,spec_cores,spec_tdpWatts
+Pentium 60,processor,Intel,1993,878,USD,Socket 4,P5,1,14
+Pentium II 300,CPU,Intel,1997,"1,981",USD,Slot 1,Klamath,1,43
+Athlon 64 3200+,cpu,AMD,2003,417,USD,Socket 754,K8,1,89
+Core 2 Duo E6600,CPU,Intel,2006,316,USD,LGA775,Conroe,2,65
+Ryzen 7 5800X3D,CPU,AMD,2022,449,USD,AM4,Zen 3,8,105

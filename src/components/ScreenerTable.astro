@@ -83,7 +83,8 @@
 
 <script>
   import { fetchMarketData } from "@/services/dataService";
-  import type { HardwareComponent } from "@modules/database/contracts";
+  import type { CpuSpecs, HardwareComponent } from "@modules/database/contracts";
+  import { specsAs } from "@modules/database/contracts";
   import { formatPrice, escapeHtml } from "@/lib/format";
   import { openPriceDrawer } from "@/lib/priceDrawer";
 
@@ -113,6 +114,16 @@
     sourceBadge: document.getElementById("data-source-badge")
   };
 
+  /** Socket moved into the open `specs` bag when the base template landed. */
+  function socketOf(item: HardwareComponent): string | undefined {
+    return specsAs<CpuSpecs>(item).socket;
+  }
+
+  function specLabel(item: HardwareComponent): string {
+    const specs = specsAs<CpuSpecs>(item);
+    return [specs.socket, specs.generation].filter(Boolean).join(" · ") || "—";
+  }
+
   function isScalped(item: HardwareComponent): boolean {
     return item.medianMarketPrice > item.fairValueScore;
   }
@@ -123,7 +134,7 @@
 
   function populateFilterOptions(data: HardwareComponent[]): void {
     fillSelect(els.category, uniqueSorted(data.map((d) => d.category)));
-    fillSelect(els.socket, uniqueSorted(data.map((d) => d.socket)));
+    fillSelect(els.socket, uniqueSorted(data.map((d) => socketOf(d)).filter((v): v is string => !!v)));
     fillSelect(
       els.year,
       uniqueSorted(data.map((d) => d.releaseYear)).sort((a, b) => Number(b) - Number(a))
@@ -143,7 +154,7 @@
     return state.all.filter((item) => {
       if (state.search && item.name.toLowerCase().indexOf(state.search) === -1) return false;
       if (state.category && item.category !== state.category) return false;
-      if (state.socket && item.socket !== state.socket) return false;
+      if (state.socket && socketOf(item) !== state.socket) return false;
       if (state.year && String(item.releaseYear) !== state.year) return false;
       if (state.scalpedOnly && !isScalped(item)) return false;
       return true;
@@ -211,7 +222,7 @@
       `<tr data-id="${escapeHtml(item.sku)}" data-row-clickable tabindex="0" role="button" aria-label="Show price history for ${escapeHtml(item.name)}">` +
       `<td><span class="component-name">${escapeHtml(item.name)}</span>` +
       `<span class="component-category">${escapeHtml(item.category)}</span></td>` +
-      `<td><span class="spec-meta">${escapeHtml(item.socket)} · ${escapeHtml(item.generation)}</span> ` +
+      `<td><span class="spec-meta">${escapeHtml(specLabel(item))}</span> ` +
       `<span class="spec-year">(${item.releaseYear})</span></td>` +
       `<td class="num-cell fair-value">${formatPrice(item.fairValueScore, item.currency)}</td>` +
       `<td class="num-cell market-price ${priceClass}">${formatPrice(item.medianMarketPrice, item.currency)}</td>` +
