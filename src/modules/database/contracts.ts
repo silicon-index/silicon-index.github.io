@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * Market Database — hardware contracts and validation models.
  *
@@ -34,7 +35,11 @@ export interface PricePoint {
 /** Closed category set. Extend deliberately — every consumer switches on it. */
 export type ComponentCategory = "CPU" | "GPU" | "RAM" | "MOBO" | "STORAGE";
 
-export const COMPONENT_CATEGORIES: readonly ComponentCategory[] = ["CPU", "GPU", "RAM", "MOBO", "STORAGE"];
+/**
+ * `as const` rather than a widened array: the literal tuple is what lets the
+ * Drizzle schema declare `category` as a real SQL enum instead of loose text.
+ */
+export const COMPONENT_CATEGORIES = ["CPU", "GPU", "RAM", "MOBO", "STORAGE"] as const satisfies readonly ComponentCategory[];
 
 /**
  * Aliases accepted by ingestion and normalized to the canonical category.
@@ -210,7 +215,7 @@ export const REQUIRED_SPEC_FIELDS: Record<ComponentCategory, readonly string[]> 
 };
 
 /** Accepted values for `StorageSpecs.type`. */
-export const STORAGE_TYPES: readonly StorageSpecs["type"][] = ["NVMe", "SATA", "HDD"];
+export const STORAGE_TYPES = ["NVMe", "SATA", "HDD"] as const satisfies readonly StorageSpecs["type"][];
 
 /* ------------------------------------------------------------------ */
 /* Base template                                                       */

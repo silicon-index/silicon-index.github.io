@@ -83,11 +83,22 @@ variables. Both reach the handler through the same second argument.
 **scrapers** — `GET /health`, `GET /whitelist`, `POST /sanitize`,
 `POST /sanitize/batch`
 
+**contributors** — `GET /token`, `POST /contribute` (public tier-1 token)
+
+**admin** — `GET /queue`, `POST /decide` (tier-2 `ADMIN_API_TOKEN`, every route)
+
+### Service tokens
+
+Every module API is **fail-closed**: without its token in the environment, all
+routes return 503. Tokens are per module, so one credential opens exactly one
+service. `ADMIN_API_TOKEN` and `DATABASE_API_TOKEN` are never `PUBLIC_` and
+never reach a browser — the admin dashboard asks the operator to paste theirs,
+and `npm run check` fails the build if a page ever reads one.
+
 ## Before exposing these publicly
 
-- **No authentication.** Every route is unauthenticated. That suits public,
-  read-only market data and pure computation, but anything that mutates state
-  must gain auth first.
+- **Service tokens are mandatory.** Every module fails closed without its
+  token, so a deployment with no secret set serves 503 rather than opening up.
 - **CORS defaults to `*`.** Appropriate for a public read API; set
   `ALLOWED_ORIGINS` to restrict it.
 - **`STORE_WHITELIST` ships empty on purpose.** A store is added only after its

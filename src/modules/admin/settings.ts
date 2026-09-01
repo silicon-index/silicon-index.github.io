@@ -1,4 +1,5 @@
-import type { SiteSettings } from "./types";
+// SPDX-License-Identifier: AGPL-3.0-or-later
+import type { SiteSettings } from "../../lib/types";
 
 /*
  * Client-side demo admin settings for Silicon Index.

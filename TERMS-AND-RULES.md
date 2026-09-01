@@ -27,8 +27,8 @@ To maintain high data integrity and ensure complete privacy compliance (GDPR & i
 
 ## 3. Intellectual Property & Open Source Licensing
 
-* **Core Codebase:** All public tools and frontends are open-sourced under the **MIT License**.
-* **Contributed Work:** Any code, patch, or schema documentation submitted via Pull Request is irrevocably licensed under the project’s default MIT terms upon merge.
+* **Core Codebase:** All public tools and frontends are open-sourced under the **GNU AGPLv3**. Running a modified version as a network service obliges you to offer its complete source to that service's users (AGPLv3 §13).
+* **Contributed Work:** Any code, patch, or schema documentation submitted via Pull Request is irrevocably licensed under the project’s default AGPLv3 terms upon merge.
 * **Fair Use Telemetry:** Silicon Index processes only public numeric data points and hardware product nomenclature. We do not claim ownership of third-party trademarks or proprietary vendor assets.
 
 ---

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * Market Database module — normalization between stored records and the
  * canonical model.

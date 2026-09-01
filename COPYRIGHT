@@ -1,0 +1,28 @@
+Silicon Index — hardware market index and screener
+Copyright (C) 2026 silicon-index contributors
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along
+with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+--------------------------------------------------------------------------------
+
+NETWORK USE
+
+AGPLv3 section 13 applies to this project in full: if you modify this program
+and make it available to users over a network, you must offer those users the
+complete corresponding source of your modified version under this same licence.
+
+THIRD-PARTY DEPENDENCIES
+
+Packages installed from npm remain under their own licences, recorded in
+package-lock.json. This licence covers the Silicon Index source in this
+repository, not its dependencies.

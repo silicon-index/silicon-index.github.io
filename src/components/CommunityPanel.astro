@@ -1,4 +1,5 @@
 ---
+// SPDX-License-Identifier: AGPL-3.0-or-later
 ---
 <section class="table-panel community-panel mx-4" aria-labelledby="community-heading">
   <div class="table-panel-header">
@@ -30,10 +31,10 @@
 
 <script>
   import { readStaged } from "@/services/dataService";
-  import { CATEGORY_LABELS } from "@/lib/specDisplay";
-  import { specSummary } from "@/lib/specDisplay";
+  import { CATEGORY_LABELS } from "@/ui/specDisplay";
+  import { specSummary } from "@/ui/specDisplay";
   import type { PriceSubmission } from "@modules/contributors/contracts";
-  import { formatPrice, escapeHtml } from "@/lib/format";
+  import { formatPrice, escapeHtml } from "@/ui/format";
 
   const STATUS_LABEL: Record<PriceSubmission["status"], string> = {
     pending: "Pending Validation",

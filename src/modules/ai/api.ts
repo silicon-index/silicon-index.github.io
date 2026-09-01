@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * AI Models — headless API entry point.
  *
@@ -18,7 +19,8 @@
  * `tsc` all resolve relative specifiers without extra configuration.
  */
 
-import { fail, json, methodNotAllowed, notFound, readJson, withApiMiddleware, type ApiEnv } from "../../lib/http";
+import { fail, json, methodNotAllowed, notFound, readJson, withApiMiddleware, type ApiEnv } from "../../platform/http";
+import { requireServiceToken } from "../security/serviceAuth";
 import { AUTO_ACCEPT_RULES } from "../admin/contracts";
 import type { AnomalyDetectionInput, FairValueInput } from "./contracts";
 import type { HardwareComponent } from "../database/contracts";
@@ -34,8 +36,17 @@ function hasSeries(value: unknown): value is { historicalPrices: unknown } {
   return typeof value === "object" && value !== null && "historicalPrices" in value;
 }
 
-async function route(request: Request, _env: ApiEnv): Promise<Response> {
+async function route(request: Request, env: ApiEnv): Promise<Response> {
   const { pathname } = new URL(request.url);
+
+
+  /*
+   * Tier-2 gate, FAIL-CLOSED: without the module's token every route is
+   * denied, including /health. An unset secret must never leave an endpoint
+   * open — a config slip would otherwise silently publish the service.
+   */
+  const denied = await requireServiceToken(request, env as Record<string, string | undefined>, "ai");
+  if (denied) return denied;
 
   if (pathname === "/health") {
     if (request.method !== "GET") return methodNotAllowed(["GET"]);

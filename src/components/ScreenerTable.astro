@@ -1,4 +1,5 @@
 ---
+// SPDX-License-Identifier: AGPL-3.0-or-later
 ---
 <div class="flex items-center justify-end gap-2 px-4 pt-3">
   <span id="row-count" class="meta-chip">0 components</span>
@@ -89,9 +90,9 @@
 <script>
   import { fetchMarketData } from "@/services/dataService";
   import type { HardwareComponent } from "@modules/database/contracts";
-  import { CATEGORY_LABELS, memoryTypeOf, socketOf, specSummary } from "@/lib/specDisplay";
-  import { formatPrice, escapeHtml } from "@/lib/format";
-  import { openPriceDrawer } from "@/lib/priceDrawer";
+  import { CATEGORY_LABELS, memoryTypeOf, socketOf, specSummary } from "@/ui/specDisplay";
+  import { formatPrice, escapeHtml } from "@/ui/format";
+  import { openPriceDrawer } from "@/ui/priceDrawer";
 
   interface State {
     all: HardwareComponent[];

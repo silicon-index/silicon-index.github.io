@@ -81,4 +81,28 @@ The prior hand-written HTML/CSS/JS implementation is kept for reference under [`
 
 ## 📄 License
 
-This project is licensed under the **[MIT License](https://opensource.org/licenses/MIT)**.
+Licensed under the **[GNU Affero General Public License v3.0](./LICENSE)** (AGPLv3).
+
+The AGPL is the GPL plus one additional obligation, and that clause is the whole
+reason it is used here. Ordinary open-source licences are triggered by
+*distributing* software — but a hosted service never distributes anything, so a
+company can take this code, modify it, run it as a competing SaaS, and owe the
+project nothing. AGPLv3 §13 closes that gap: **if you run a modified version and
+let users interact with it over a network, you must offer those users the
+complete corresponding source of your modified version.**
+
+In practice:
+
+* **Using the public site** — no obligations at all.
+* **Self-hosting it unmodified** — no source-offer obligation beyond the usual
+  AGPL terms.
+* **Running a modified version as a network service** — you must publish your
+  modifications under AGPLv3, to your users.
+* **Combining it into a closed-source product** — not permitted.
+
+Contributions are accepted under the same licence (see
+[DEV-GUIDE.md](./DEV-GUIDE.md) §4). Copyright and the network-use clause are set
+out in [COPYRIGHT](./COPYRIGHT).
+
+Third-party npm dependencies keep their own licences, recorded in
+`package-lock.json`; AGPLv3 covers the Silicon Index source in this repository.

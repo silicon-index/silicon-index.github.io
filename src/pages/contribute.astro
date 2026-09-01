@@ -1,7 +1,8 @@
 ---
+// SPDX-License-Identifier: AGPL-3.0-or-later
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { COMPONENT_CATEGORIES } from "../modules/database/contracts";
-import { CATEGORY_LABELS } from "../lib/specDisplay";
+import { CATEGORY_LABELS } from "../ui/specDisplay";
 ---
 <BaseLayout title="Contribute" activeNav="contribute">
   <div class="layout layout--form px-4">
@@ -89,9 +90,33 @@ import { CATEGORY_LABELS } from "../lib/specDisplay";
   import { getOrCreateAnonymousId, getOrCreateContributorHash } from "@modules/contributors/identity";
   import { normalizeSku } from "@modules/database/adapters";
   import { validateSpecs } from "@modules/database/ingest";
-  import { SPEC_FORM_FIELDS } from "@/lib/specForm";
+  import { SPEC_FORM_FIELDS } from "@/ui/specForm";
   import type { ComponentCategory, SpecValue } from "@modules/database/contracts";
   import type { ContributorTier } from "@modules/contributors/contracts";
+
+  /**
+   * Submission token, fetched on mount when an API is configured.
+   *
+   * Best-effort: with no `PUBLIC_API_URL` the page stages locally as before,
+   * so the demo keeps working. When an API is present the token is required,
+   * and a failure to obtain one is surfaced rather than silently dropping the
+   * submission.
+   */
+  const API_BASE = (import.meta.env.PUBLIC_API_URL ?? "").trim().replace(/\/+$/, "");
+  let submissionToken: string | null = null;
+  let tokenError: string | null = null;
+
+  async function fetchSubmissionToken(): Promise<void> {
+    if (!API_BASE) return;
+    try {
+      const res = await fetch(`${API_BASE}/token`, { headers: { accept: "application/json" }, cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      submissionToken = (await res.json()).token ?? null;
+    } catch (err) {
+      tokenError = (err as Error).message;
+    }
+  }
+  void fetchSubmissionToken();
 
   const session = getSession();
   const noteEl = document.getElementById("contribute-signed-in") as HTMLParagraphElement;
@@ -238,6 +263,43 @@ import { CATEGORY_LABELS } from "../lib/specDisplay";
       contributorId: session ? session.username : getOrCreateAnonymousId(),
       contributorTier: (session ? "trusted" : "anonymous") as ContributorTier
     };
+
+    // With an API configured, submit through it so the row lands in the
+    // staging quarantine rather than this browser's localStorage.
+    if (API_BASE) {
+      if (!submissionToken) {
+        return showError(
+          tokenError
+            ? `Could not obtain a submission token (${tokenError}). Reload the page and try again.`
+            : "Still preparing the form — try again in a moment."
+        );
+      }
+
+      void (async () => {
+        try {
+          const res = await fetch(`${API_BASE}/contribute`, {
+            method: "POST",
+            headers: { "content-type": "application/json", "x-submission-token": submissionToken as string },
+            body: JSON.stringify({ ...base, category, specs })
+          });
+          if (!res.ok) {
+            const detail = await res.json().catch(() => null);
+            return showError(detail?.error?.detail ?? `Submission rejected (HTTP ${res.status}).`);
+          }
+          form.reset();
+          renderSpecFields("");
+          successEl.hidden = false;
+          successEl.textContent =
+            "Submitted. Your entry is staged as Pending Validation and reaches the screener only after an admin approves it.";
+          // A token is single-use by convention here; take a fresh one.
+          submissionToken = null;
+          void fetchSubmissionToken();
+        } catch (err) {
+          showError(`Could not reach the submission API (${(err as Error).message}).`);
+        }
+      })();
+      return;
+    }
 
     // `validateSpecs` has just proved the bag matches the category's contract;
     // the switch is what carries that proof into the discriminated union.

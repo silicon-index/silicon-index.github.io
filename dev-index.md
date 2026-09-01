@@ -755,3 +755,311 @@ Item 155. Verified with 19 assertions: storage key and v4 UUID format, persisten
           with no email/IP/name anywhere in it.
 Item 156. `npm run check` clean (30 files, 6 contracts pure, 3 handlers portable, no cycles; 0 errors across 46
           files); build clean; `crypto.randomUUID` and the disclosure text both confirmed in the shipped bundle.
+
+## Phase 26 — Moderation Queue Refinement (done)
+
+Item 157. The Admin Panel and its review queue already existed (Phase 13). This phase filled the gaps the brief
+          named rather than rebuilding it: the missing columns, `ModerationAction` enforcement, sample data, and
+          a zinc/emerald pass. The route stays `/admin` via `src/pages/admin.astro` — `admin/index.astro` would
+          serve the identical URL, so moving it would be churn.
+Item 158. Queue columns now match the brief: **Contributor** (handle, truncated `contributorHash`, tier badge),
+          **Category**, **Component / SKU** (with the category-aware spec summary), **Price**, **Median ±%**,
+          **Proof**, **Submitted**, **Status**, **Actions**.
+Item 159. The proof cell shows the URL's **hostname** beside the link, so a moderator can spot an unwhitelisted
+          source without opening it — which is what the "Unwhitelisted seller or source" denial tag is for. That
+          tag was added to `DENIAL_REASONS`, from the brief's examples.
+Item 160. Replaced four ad-hoc click handlers with a single dispatcher typed
+          `Record<ModerationAction, (id, reason?) => void>`. Buttons declare `data-action`, so adding an action
+          to the contract now fails the build here until the UI handles it, instead of silently doing nothing.
+          `STATUS_BADGE`/`STATUS_LABEL` are keyed on `SubmissionStatus` directly.
+Item 161. Added `src/lib/demoQueue.ts` with four sample submissions covering both tiers, the `anon-xxxxxxxx`
+          handle format, four categories, a SKU the auto-accept engine can price against, and one absent from
+          the catalogue (exercising the "no series" path).
+Item 162. **Sample data is not auto-loaded**, which is a deliberate departure from the obvious implementation.
+          Seeding invented submissions into the live queue on page load would put fabricated items in front of a
+          moderator with nothing distinguishing them from real contributions, and one would eventually be
+          approved into the index. Instead: an explicit "Load sample queue" button, every sample carries a
+          `demo_` id and renders a "sample" badge, proof URLs point only at `example.com`, and "Clear samples"
+          removes exactly those rows and nothing else.
+Item 163. Verified with 25 assertions: every sample validates against the real `validateSpecs` contract (they are
+          not hand-waved fixtures); loading is additive and idempotent; clearing removes only samples and leaves
+          a real submission intact; and approve / deny-with-canonical-reason / flag / reopen all behave over the
+          seeded queue.
+Item 164. `npm run check` clean (31 files, 6 contracts pure, 3 handlers portable, no cycles; 0 errors across 47
+          files); build clean; admin page ships the new columns, both sample controls, the typed dispatcher, and
+          is still role-gated behind `admin-denied`.
+
+## Phase 27 — Drizzle + LibSQL Persistence Layer (done)
+
+Item 165. Installed `drizzle-orm` and `@libsql/client` (runtime) and `drizzle-kit` (dev), plus
+          `db:generate` / `db:migrate` / `db:studio` scripts and `drizzle.config.ts`.
+Item 166. **Correction to the premise.** The brief stated that `@libsql/client` "maps cleanly to Cloudflare D1".
+          It does not: verified from the installed packages that `@libsql/client`'s default entry is
+          Node-targeted (separate `./web` export), and that Drizzle ships a **separate** `d1` driver. LibSQL
+          cannot speak to D1 — D1 arrives as a Worker binding. One client cannot serve both targets.
+Item 167. Implemented the portable form of that intent instead. The portability is real but it lives in the
+          **schema and queries**, not the client: `schema.ts` is `drizzle-orm/sqlite-core`, which both targets
+          speak, so identical application code runs against either. Only the constructor differs —
+          `db.ts` (`drizzle-orm/libsql`) for containers, `db.d1.ts` (`drizzle-orm/d1`) for Workers. Split into
+          two files deliberately: a single `db.ts` importing LibSQL would drag `node:*` into any Worker bundle
+          that touched it.
+Item 168. `schema.ts` — four tables. `components` carries the base template plus market state; the polymorphic
+          `specs` is `text(..., { mode: "json" }).$type<ComponentSpecs>()`, with `category` kept as a real SQL
+          enum so the discriminant is constrained by the database and not only by the app. `price_observations`
+          stores the series as rows rather than a JSON array — it is the unbounded, range-scanned table and the
+          natural landing zone for scraper output. `submissions` holds the `/contribute` flow (contributorHash,
+          price, status, proof, specs) and is deliberately separate from `components`, because a proposal must
+          never be readable as catalogue data. `contributors` keys reputation on `contributorHash`.
+Item 169. Tightened `COMPONENT_CATEGORIES`, `STORAGE_TYPES` and a new `SUBMISSION_STATUSES` to
+          `as const satisfies …` literal tuples — that is what lets Drizzle declare them as SQL enums rather
+          than loose text.
+Item 170. `resolveConfig` throws when `DATABASE_URL` is remote but no auth token is set, instead of failing
+          later with an opaque query error. Env is passed in rather than read from `process.env`, so the wrapper
+          works where env arrives as an argument.
+Item 171. Used Drizzle 0.45's current array-returning index API; the object form is deprecated and would have
+          rotted.
+Item 172. **New architecture invariant (rule 4):** server-only modules must be unreachable from any page,
+          component, layout, or WinterCG `api.ts`. The checker walks the whole import graph from every
+          client-reachable entry point, so an indirect path is caught too. Verified by breaking it twice —
+          a direct `api.ts → db.ts` import, and an indirect `api.ts → validate.ts → db.ts` — confirming both
+          fail with the offending path printed, then restoring.
+Item 173. Verified against a real database, not a mock: applied the generated migration to a LibSQL file and ran
+          23 assertions — config resolution and the remote-without-token guard; a catalogue round trip where
+          `specs` returns as an object with nested values and numeric types intact; two different spec shapes
+          living in the same JSON column; a nullable MSRP stored as null; an ordered price series with its
+          source-type enum; a submission defaulting to `pending` with `autoAccepted` as a real boolean; a
+          moderation update persisting a canonical denial reason; and reputation keyed on the hash.
+Item 174. Confirmed WinterCG compliance held: `npm run check` clean (34 files, 0 errors across 50), build clean,
+          **zero** occurrences of `libsql`, `drizzle`, `node:fs` or `node:path` in any client bundle, and all
+          three API handlers still bundle clean under `esbuild --platform=neutral`.
+Item 175. Not done, deliberately: nothing is wired to read or write through this layer yet. The portal still
+          uses `localStorage`, and switching it over is the Phase 5 backend work — it needs the driver split
+          above respected at each call site, which is exactly what rule 4 now enforces.
+
+## Phase 28 — Airgapped Schema & Stateless Submission Tokens (done)
+
+Item 176. Split `schema.ts` into `schema/core.ts` (trusted index: `components`, `price_observations`,
+          `contributors`) and `schema/staging.ts` (untrusted quarantine: `submissions`). `db.ts`/`db.d1.ts`
+          compose both for migrations and the moderation path; public write handlers take neither.
+Item 177. Staging deliberately has **no foreign key** to `components.sku`. A submission may name a part that
+          does not exist yet, and an FK would both reject those and hand an attacker a probe for which SKUs
+          exist. Isolation is the point: a poisoned row cannot corrupt the index by reference either.
+Item 178. Added `src/modules/contributors/api.ts` with `GET /token` and `POST /contribute`. The airgap is
+          **structural, not conventional**: the file imports `schema/staging.ts` and never `schema/core.ts`, so
+          a core table is not merely forbidden — it is not *nameable* in that scope. The database arrives by
+          injection, so the handler imports no driver and stays WinterCG-portable (verified: it bundles clean
+          under `esbuild --platform=neutral`).
+Item 179. The handler rebuilds every column from scratch rather than spreading the request body, so `status`,
+          `reviewedAt`, `autoAccepted`, `decisionNote` and `submissionId` are never taken from input. A public
+          write can only ever produce a `pending` row — asserted by tests that attempt exactly that escalation.
+Item 180. Added `src/modules/contributors/auth.ts`: stateless HMAC-SHA256 tokens on `crypto.subtle` — no
+          `node:crypto`, no polyfill, no dependency. Signature verified with `crypto.subtle.verify` (constant
+          time) **before** the payload is parsed, so an unproven payload is never interpreted. Carries `iat`,
+          `exp`, a random `jti`, and an `aud` so a token minted for one route cannot be spent on another.
+          Fails closed on a missing or under-32-character secret.
+Item 181. **Honest limits, documented in the module header.** These tokens do NOT prevent replay: a stateless
+          bearer credential can be resubmitted until it expires, and real protection needs the `jti` recorded in
+          a store (`extractJti` is the hook, nothing consumes it yet). They also do not stop a determined
+          spammer, because the issuing endpoint is public by design — a bot can fetch a fresh token per
+          submission. This is a speed bump plus an integrity check, not authentication; the actual defences are
+          edge rate limiting and the moderation airgap.
+Item 182. **New architecture invariant (rule 5): the airgap.** The checker walks the import graph from the
+          public contribution entry and fails the build on any path reaching `schema/core.ts`.
+Item 183. **Found a real defect in the checker while testing it.** The direct breach was caught but an indirect
+          one through a barrel file passed — the edge extractor only matched `import … from`, missing
+          `export … from`, which is exactly the re-export form `db.ts` itself uses. The graph had been
+          incomplete for rules 4 and 5 both. Fixed the pattern and confirmed the indirect breach is now caught
+          with the full path printed. A guard that has only ever been tested on the easy case is not a guard.
+Item 184. Frontend: `/contribute` fetches a token on mount when `PUBLIC_API_URL` is set and sends it as
+          `x-submission-token`, falling back to local staging when no API is configured so the demo keeps
+          working. A token failure is surfaced rather than silently dropping the submission.
+Item 185. Squashed the two generated migrations into one. The second was a legitimate SQLite table rebuild for a
+          new default, but neither had ever been applied anywhere, so shipping a rebuild as migration #2 would
+          have been noise. Verified the single migration applies cleanly to a fresh database.
+Item 186. Verified: 25 crypto assertions (forgery with another key, tampered payload and signature, signature-
+          less "alg none" shape, expiry, clock skew, future-dated tokens, audience binding, fail-closed on weak
+          secrets, 200 distinct tokens, `jti` withheld for unverified tokens) and 30 pipeline assertions against
+          a real LibSQL database (token issuance and 503 without a secret, every rejection path, the row landing
+          in staging with `status` forced to `pending`, **the core table still empty**, privilege-escalation
+          fields ignored, contract validation rejecting a socket on a GPU, and method/route/CORS hygiene).
+Item 187. `npm run check` clean (37 files, 0 errors across 53); build clean; zero occurrences of `libsql`,
+          `node:fs`, `node:path` or `CONTRIBUTE_TOKEN_SECRET` in any client bundle.
+
+## Phase 29 — Two-Tier Security: Per-Module Service Tokens (done)
+
+Item 188. Added `src/lib/serviceAuth.ts` — tier-2 authentication. The two tiers protect different things and the
+          module header says so plainly: tier 1 (`contributors/auth.ts`) is a public, stateless speed bump that
+          is **not** authentication; tier 2 is a real service credential and is held to a higher standard.
+Item 189. Comparison is constant-time via a double-HMAC construction under a per-call random key. A plain `===`
+          on a secret leaks its prefix through timing *and* its length; Web Crypto has no `timingSafeEqual`, so
+          this is the portable equivalent.
+Item 190. **Fails closed.** An unset or under-24-character token yields 503 and denies the request — a
+          misconfigured deployment must never silently become an open write endpoint, which is the failure mode
+          that turns a config slip into a data breach. Misconfiguration (503, our fault) is distinguished from a
+          bad credential (401, the caller's); error details never echo the supplied value.
+Item 191. One env var per module (`SERVICE_TOKEN_ENV`), so a token opens exactly one module. Asserted in both
+          directions: a `DATABASE_API_TOKEN` is rejected on an admin route, and an `ADMIN_API_TOKEN` is rejected
+          on the AI module. Accepts `x-service-token` or `Authorization: Bearer`.
+Item 192. Added `src/modules/admin/api.ts` — the other side of the airgap, and the **only** path from staging
+          into the trusted index. Every route requires `ADMIN_API_TOKEN`, including `/health`: whether a
+          moderation queue exists is not a stranger's business. Auth runs before routing, so an unauthenticated
+          caller cannot enumerate paths.
+Item 193. Promotion writes `originalMSRP: null` rather than copying the reported price. A submission reports an
+          *observed market price*, not a launch MSRP, and inventing one would put a fabricated figure in the
+          trusted catalogue.
+Item 194. Denial requires a canonical `DENIAL_REASONS` tag; free text is rejected. It would otherwise be the one
+          unvalidated string a moderator could write into the audit trail.
+Item 195. Compute-only modules (`ai`, `scrapers`) use `requireServiceTokenIfConfigured` — enforced when a token
+          is set, open otherwise. This is a deliberate policy choice for endpoints that read and write nothing,
+          documented as such, and it is available **only** there. Anything touching data uses the fail-closed
+          guard.
+Item 196. **Relaxed architecture rule 3 from a blanket ban to an explicit allowlist.** `drizzle-orm` is pure JS
+          and runs on Workers, so query building belongs in a portable handler; `@libsql/client` does not and
+          stays banned. Verified the ban still fires by adding the LibSQL import to a handler and watching it
+          fail. Adding to the allowlist is an assertion that a package runs on Workers, and
+          `esbuild --platform=neutral` is what proves it — all five handlers still bundle clean.
+Item 197. Verified with 34 assertions: constant-time equality including length mismatch; fail-closed on unset and
+          weak secrets; missing/wrong credential rejection with `WWW-Authenticate` and no secret echoed; module
+          isolation both ways; both credential forms; tier-1 and tier-2 being genuinely independent (a service
+          token does not substitute for the public token, and vice versa); **core still empty after an
+          unauthorized promotion attempt**; authorized promotion carrying specs across the airgap with MSRP left
+          null; re-decision returning 409; and free-text denial reasons refused.
+Item 198. `npm run check` clean (39 files, 0 errors across 55); build clean; all five handlers bundle for the
+          edge; zero occurrences of `ADMIN_API_TOKEN`, `DATABASE_API_TOKEN`, `CONTRIBUTE_TOKEN_SECRET` or
+          `libsql` in any client bundle.
+
+## Phase 30 — Project Evaluation & `src/` Split (done)
+
+Item 199. Split `src/lib` — an 11-file junk drawer with no organizing principle — by asking of each file *who
+          consumes it*: `serviceAuth.ts` → `modules/security/` (which held only contracts); `settings.ts` and
+          `demoQueue.ts` → `modules/admin/` (admin-managed config, admin-only fixtures); `http.ts` →
+          new `src/platform/` (used by all five API handlers, and "lib" said nothing about that); `format.ts`,
+          `specDisplay.ts`, `specForm.ts`, `priceChart.ts`, `priceDrawer.ts` → new `src/ui/`.
+Item 200. Kept presentation OUT of `modules/`, holding the Phase 17 rule. `specDisplay`/`specForm` encode
+          category knowledge but are formatting and form descriptors; putting them in `database/` would make
+          that module carry UI concerns and stop it being splittable into its own repo.
+Item 201. `src/lib` now holds exactly two genuinely app-level files (the demo browser session and the contract
+          facade), documented as such so it does not refill.
+Item 202. Added `src/ARCHITECTURE.md` documenting the layout, the `platform` / `ui` / `lib` distinction, and all
+          six enforced invariants. Taught the checker that `src/ui/` is client-reachable, and verified rule 4
+          still bites in the new layout by importing the Node driver into `src/ui/format.ts` and watching it
+          fail with the path printed.
+Item 203. `npm run check` clean (39 files, 0 errors across 55); build clean.
+
+### Evaluation — findings, worst first
+
+Item 204. **No committed tests.** Roughly 250 assertions have been written across these phases and every one was
+          a scratch file in `/tmp`, deleted after running. Nothing is reproducible by anyone else, and nothing
+          runs in CI. Every "verified" claim in this document is currently unrepeatable. This is the single
+          largest gap in the project and should be closed before more features land.
+Item 205. **The backend is wired to nothing.** All five `api.ts`, both drivers, and the entire Drizzle schema
+          have zero references from any page, component, or service — confirmed by import-graph search. The
+          portal still runs entirely on `localStorage`. There are effectively two parallel implementations, and
+          the seam between them (Phase 5) has never been built.
+Item 206. **Deploy coverage is behind.** Five handlers exist; `deploy/` has Dockerfile + wrangler config for
+          three. `contributors` and `admin` — the two that touch data and hold secrets — have neither.
+Item 207. `modules/database/schemas.ts` (the upstream wire contract) is now unreferenced, and its name collides
+          confusingly with the `schema/` directory. Either wire it into `dataService` or delete it.
+Item 208. `legacy-static/` is 124K of superseded vanilla implementation, retained since Phase 10 as a rollback
+          that has never been needed. Two datasets also coexist (`public/mock-data.json` and
+          `public/catalog.json`) with nothing consuming the latter.
+Item 209. 23 files uncommitted at the time of writing, spanning four phases of work.
+
+## Phase 31 — Admin Moderation Dashboard (done)
+
+Item 210. **Corrected the brief's premise before building on it.** Compute routes were NOT fail-closed: `ai` and
+          `scrapers` used `requireServiceTokenIfConfigured`, which allows access when no token is set — the
+          policy choice flagged for sign-off in Phase 29. Made them fail-closed as stated, and **deleted** the
+          fail-open helper entirely so nothing can reintroduce it by accident.
+Item 211. **The brief's suggested approach for the token cannot be made secure**, in two independent ways.
+          (a) This is a static build with no request-time server, so anything a page can read has already been
+          inlined into a public JS file — an "env secret" in a static bundle is a published secret. (b) Astro
+          only exposes `PUBLIC_*` to client code, so a non-public var would be `undefined` anyway. Fetching
+          server-side is no better: at build time it would bake the live moderation queue into a world-readable
+          asset.
+Item 212. Implemented the approach that is actually safe: the **operator pastes their token at runtime**, held
+          in `sessionStorage` so it dies with the tab, is cleared from the DOM immediately, and never enters the
+          bundle or the repository. This is how an admin console without a session backend has to work.
+Item 213. **New architecture invariant (rule 6):** no client-reachable file may *read* a server secret. Matches
+          `import.meta.env.X`, `process.env.X`, `env.X` and `env["X"]` — but deliberately not the name in prose,
+          so documentation and UI copy stay free to explain why the token is not held there. A checker with
+          false positives is one that gets switched off.
+Item 214. **Found a significant hole in the checker while adding rule 6.** The file walker only collected `.ts`,
+          so `.astro` files — every page and component, exactly where client-reachable code lives — had never
+          been examined by rules 4, 5 or 6 at all. Fixed; the scan went from 39 files to 54. Rule 4's
+          "pages cannot reach the Node driver" had until now been vacuously true.
+Item 215. Moved `src/pages/admin.astro` → `src/pages/admin/index.astro` (same `/admin` URL) and added
+          `src/ui/adminModeration.ts`: connect/disconnect, live queue fetch, and the moderation table showing
+          contributor handle with truncated hash, category, component/SKU, price, proof URL with its hostname,
+          and timestamp. Approve is emerald, Reject red with the canonical `DENIAL_REASONS` dropdown.
+Item 216. The dashboard degrades honestly: with no `PUBLIC_ADMIN_API_URL` the live panel hides itself and the
+          existing local demo queue remains, rather than showing a broken table.
+Item 217. Verified with 24 assertions against the real API and a real LibSQL database: compute routes now
+          denying when unconfigured; the queue requiring a token; every column the brief listed being present;
+          approve promoting into core with **`originalMSRP` null, not the reported price**; reject recording a
+          canonical reason and **not** reaching core; and the queue draining correctly.
+Item 218. Proved the secret cannot leak by building **with `ADMIN_API_TOKEN` actually exported**: zero
+          occurrences of its value anywhere in `dist/`. The only matches for the name are the UI label and
+          explanatory copy. `npm run check` clean (54 files, 0 errors across 56); build clean.
+
+## Phase 32 — AGPLv3 Relicensing & Memory-Only Admin Dashboard (done)
+
+Item 219. Replaced the MIT `LICENSE` with the **verbatim AGPLv3 text fetched from gnu.org** (34,523 bytes, 661
+          lines) rather than reconstructed from memory — an approximated licence is not the licence. Verified
+          byte-identical to the source after installation.
+Item 220. Added `COPYRIGHT` recording the holder and, importantly, the **relicensing caveat**: the earlier MIT
+          grant is irrevocable, so anyone who obtained a copy under MIT keeps those rights for that copy and
+          prior releases do not retroactively become AGPL. MIT is AGPL-compatible, so existing code may be
+          combined into the AGPL work.
+Item 221. Fixed three places that still asserted MIT and would have directly contradicted the new licence:
+          `DEV-GUIDE.md` §4.2 ("contributions are licensed under the repository's MIT License"),
+          `TERMS-AND-RULES.md` (both the codebase and contributed-work clauses), and `package.json`
+          (`license: "AGPL-3.0-or-later"`). A contributor-terms clause naming the wrong licence is a real legal
+          problem, not a documentation nit.
+Item 222. README now explains *why* AGPL rather than just naming it: ordinary licences trigger on distribution,
+          and a hosted service distributes nothing — §13 is what closes that gap, obliging a modified network
+          deployment to offer its source to that service's users.
+Item 223. Surfaced the conflict in requirement 2 rather than implementing something that could not work: with
+          `output: "static"` there is no request-time server, so an Astro frontmatter fetch runs at BUILD time —
+          it would bake the live moderation queue into a world-readable asset and still not hold a server-side
+          token. Presented the three real options; the decision was **memory-only on static hosting**.
+Item 224. Reworked the dashboard to hold the credential in **volatile memory only**: a module-scoped variable,
+          no `localStorage`, no `sessionStorage`, no IndexedDB, no cookie. The input is cleared the instant it
+          is read, the token travels as a header (never a URL, which would reach history, proxy logs and any
+          onward `Referer`), requests are sent `no-referrer`, and a `pagehide` listener drops the reference so a
+          bfcache-restored page cannot resume holding it.
+Item 225. The cost is stated in the UI rather than hidden: refreshing means re-entering the token. That is the
+          trade for leaving no credential at rest where a later XSS bug or a shared machine could retrieve it.
+Item 226. **New architecture invariant (rule 7):** a designated memory-only module may not touch a persistence
+          API. Matched as a real call or member access, so the file can still document what it refuses to use.
+          Verified by adding a genuine `sessionStorage.setItem` and watching the build fail, then restoring.
+Item 227. Verified requirement 5 by building with `ADMIN_API_TOKEN` **actually exported**: zero occurrences of
+          its value anywhere in `dist/`, and zero occurrences of `libsql`, `drizzle`, or any `node:` builtin.
+          Inspected the shipped admin chunk directly — the token is held in a bare local (`L`), the chunk
+          contains no storage API at all, and the `pagehide` discard is present.
+Item 228. `npm run check` clean (54 files, 0 errors across 56); build clean.
+
+## Phase 33 — MIT Removal & AGPLv3 Declaration (done)
+
+Item 229. Removed every remaining MIT claim from the project's own text: the historical clause in
+          `TERMS-AND-RULES.md`, the pointer in `README.md`, and the relicensing note in `COPYRIGHT`, which is
+          now an AGPL-only notice covering copyright, the §13 network-use obligation, and third-party deps.
+Item 230. **Did NOT rewrite `package-lock.json`.** 573 entries there declare `"license": "MIT"` — those describe
+          third-party npm packages (astro, drizzle, chokidar, …), not this project. Changing them would misstate
+          other projects' licences. Our own root entry carries no MIT.
+Item 231. Also ignored the apparent hits inside `LICENSE` itself: the AGPL text contains "PERMITTED" and
+          "LIMITED", which match a substring search for MIT. A naive find-and-replace would have corrupted the
+          licence text.
+Item 232. Left the `dev-index.md` entries describing the relicensing intact. Those are a changelog record that
+          the change happened, not a claim of MIT licensing; editing them would falsify the project's own
+          history of its decisions.
+Item 233. Added `SPDX-License-Identifier: AGPL-3.0-or-later` to all 44 `.ts`, 14 `.astro` and both `.mjs`
+          source files — 100% coverage. This matters for AGPL specifically: obligations follow the code, so a
+          file copied out of the repo should carry its licence with it. In `.astro` the header goes *inside* the
+          frontmatter fence, since a comment before `---` would break parsing; verified it does not leak into
+          the rendered HTML.
+Item 234. Shebangs preserved: `scripts/seed-catalog.ts` keeps `#!/usr/bin/env node` on line 1 with SPDX on
+          line 2, so the interpreter line still works.
+Item 235. Verified the declaration is consistent across `LICENSE`, `package.json` (`AGPL-3.0-or-later`),
+          `README.md`, `DEV-GUIDE.md`, `TERMS-AND-RULES.md` and `COPYRIGHT`. `npm run check` clean (54 files,
+          0 errors across 56); build clean.

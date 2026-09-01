@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * Contributors Hub — profile tiers, submission payloads, and verification.
  *

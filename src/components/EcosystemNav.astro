@@ -1,4 +1,5 @@
 ---
+// SPDX-License-Identifier: AGPL-3.0-or-later
 import { DEV_ECOSYSTEM_NAV, resolveNavHref, isFallingBack } from "../config/navigation";
 
 interface Props {
@@ -86,7 +87,7 @@ const { variant } = Astro.props;
 */}
 <script>
   import { DEV_ECOSYSTEM_NAV, resolveNavHrefWithSettings, isFallingBackWithSettings } from "@/config/navigation";
-  import { get as getSettings } from "@/lib/settings";
+  import { get as getSettings } from "@modules/admin/settings";
 
   // Apply any admin overrides saved in the Admin Panel. Pages are prerendered
   // with the static defaults, so this rewrites every tagged anchor (header

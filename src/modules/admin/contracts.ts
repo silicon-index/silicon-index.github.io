@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * Admin Dashboard — moderation contracts.
  *
@@ -11,6 +12,10 @@
 /** Lifecycle of a price submission, from staging to moderator decision. */
 export type SubmissionStatus = "pending" | "approved" | "denied" | "flagged";
 
+/** Runtime tuple of the lifecycle, for SQL enums and validation. */
+export const SUBMISSION_STATUSES = ["pending", "approved", "denied", "flagged"] as const satisfies
+  readonly SubmissionStatus[];
+
 /** Action a moderator (or the auto-accept engine) applies to a submission. */
 export type ModerationAction = "approve" | "deny" | "flag" | "reopen";
 
@@ -20,6 +25,7 @@ export const DENIAL_REASONS = [
   "Price outside plausible market range",
   "Duplicate submission",
   "Wrong component / SKU mismatch",
+  "Unwhitelisted seller or source",
   "Violates data whitelist (PII or free text)"
 ] as const;
 

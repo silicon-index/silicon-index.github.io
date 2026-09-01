@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * Market Scrapers — headless API entry point.
  *
@@ -20,7 +21,8 @@
  * `tsc` all resolve relative specifiers without extra configuration.
  */
 
-import { fail, json, methodNotAllowed, notFound, readJson, withApiMiddleware, type ApiEnv } from "../../lib/http";
+import { fail, json, methodNotAllowed, notFound, readJson, withApiMiddleware, type ApiEnv } from "../../platform/http";
+import { requireServiceToken } from "../security/serviceAuth";
 import { PERMITTED_INGESTION_FIELDS, STRIPPED_QUERY_PREFIXES, type StoreWhitelist } from "./contracts";
 import { sanitizeBatch, sanitizeRecord } from "./sanitize";
 
@@ -46,6 +48,15 @@ function whitelistFrom(env: ApiEnv & { STORE_WHITELIST?: string }): StoreWhiteli
 
 async function route(request: Request, env: ApiEnv): Promise<Response> {
   const { pathname } = new URL(request.url);
+
+
+  /*
+   * Tier-2 gate, FAIL-CLOSED: without the module's token every route is
+   * denied, including /health. An unset secret must never leave an endpoint
+   * open — a config slip would otherwise silently publish the service.
+   */
+  const denied = await requireServiceToken(request, env as Record<string, string | undefined>, "scrapers");
+  if (denied) return denied;
   const whitelist = whitelistFrom(env);
 
   if (pathname === "/health") {

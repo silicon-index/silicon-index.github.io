@@ -144,3 +144,7 @@ vite.config.ts.timestamp-*
 
 # Astro
 .astro/
+
+# Local database
+local.db
+local.db-*

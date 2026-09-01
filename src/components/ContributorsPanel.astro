@@ -1,4 +1,5 @@
 ---
+// SPDX-License-Identifier: AGPL-3.0-or-later
 ---
 <section class="table-panel community-panel mx-4" id="contributors-panel" aria-labelledby="contributors-heading">
   <div class="table-panel-header">
@@ -33,8 +34,8 @@
 <script>
   import { fetchContributors } from "@/services/dataService";
   import type { ContributorProfile } from "@modules/contributors/contracts";
-  import { get as getSettings } from "@/lib/settings";
-  import { escapeHtml } from "@/lib/format";
+  import { get as getSettings } from "@modules/admin/settings";
+  import { escapeHtml } from "@/ui/format";
 
   const link = document.getElementById("contributor-guidelines-link") as HTMLAnchorElement | null;
   if (link) link.href = getSettings().contributorsUrl;

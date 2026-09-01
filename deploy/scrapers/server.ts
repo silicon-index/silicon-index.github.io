@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * Container bootstrap for the scrapers module API (Coolify, Fly, any Docker host).
  *

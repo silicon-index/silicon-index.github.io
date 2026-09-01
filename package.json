@@ -10,18 +10,25 @@
     "astro": "astro",
     "check:arch": "node scripts/check-architecture.mjs",
     "check": "node scripts/check-architecture.mjs && astro check",
-    "seed:catalog": "vite-node scripts/seed-catalog.ts --"
+    "seed:catalog": "vite-node scripts/seed-catalog.ts --",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.4",
     "astro": "^4.16.0",
+    "drizzle-orm": "^0.45.2",
     "uplot": "^1.6.31"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@astrojs/tailwind": "^5.1.2",
     "@types/node": "^26.4.0",
+    "drizzle-kit": "^0.31.10",
     "tailwindcss": "^3.4.13",
     "typescript": "^5.6.3",
     "vite-node": "^6.0.0"
-  }
+  },
+  "license": "AGPL-3.0-or-later"
 }

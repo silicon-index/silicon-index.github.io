@@ -663,24 +663,41 @@ body {
   font-family: inherit;
 }
 
+/* Approve is emerald, reject is red — matched to the terminal header so the
+   two destructive/constructive actions are never confusable. */
 .btn-approve {
-  background: var(--good-bg);
-  color: var(--good);
-  border: 1px solid rgba(52, 211, 153, 0.35);
+  background: rgba(16, 185, 129, 0.14);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  font-weight: 600;
 }
 
 .btn-approve:hover {
-  background: rgba(52, 211, 153, 0.2);
+  background: rgba(16, 185, 129, 0.26);
+  border-color: #34d399;
 }
 
 .btn-reject {
-  background: var(--bad-bg);
-  color: var(--bad);
-  border: 1px solid rgba(248, 113, 113, 0.35);
+  background: rgba(244, 63, 94, 0.12);
+  color: #fb7185;
+  border: 1px solid rgba(251, 113, 133, 0.38);
+  font-weight: 600;
 }
 
 .btn-reject:hover {
-  background: rgba(248, 113, 113, 0.2);
+  background: rgba(244, 63, 94, 0.24);
+  border-color: #fb7185;
+}
+
+.btn-approve:focus-visible,
+.btn-reject:focus-visible {
+  outline: 2px solid #34d399;
+  outline-offset: 2px;
+}
+
+/* The queue is dense; give it room to breathe without shrinking hit targets. */
+.screener-table td .admin-actions + .admin-actions {
+  margin-top: 4px;
 }
 
 /* Support / donations */

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * Market Database — headless API entry point.
  *
@@ -15,7 +16,7 @@
  * `tsc` all resolve relative specifiers without extra configuration.
  */
 
-import { fail, json, methodNotAllowed, notFound, readJson, withApiMiddleware, type ApiEnv } from "../../lib/http";
+import { fail, json, methodNotAllowed, notFound, readJson, withApiMiddleware, type ApiEnv } from "../../platform/http";
 import { isHardwareComponentArray, toHardwareComponent } from "./adapters";
 import type { ComponentEntry, HardwareComponent } from "./contracts";
 import { validateHardwareComponent } from "./validate";

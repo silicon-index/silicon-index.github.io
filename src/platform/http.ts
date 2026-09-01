@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * Runtime-agnostic HTTP helpers for the headless module APIs.
  *

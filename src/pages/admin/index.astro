@@ -1,6 +1,7 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
-import { DEV_ECOSYSTEM_NAV } from "../config/navigation";
+// SPDX-License-Identifier: AGPL-3.0-or-later
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { DEV_ECOSYSTEM_NAV } from "../../config/navigation";
 ---
 <BaseLayout title="Admin Panel" activeNav="admin">
   <main class="content px-4">
@@ -125,12 +126,75 @@ import { DEV_ECOSYSTEM_NAV } from "../config/navigation";
         </p>
       </section>
 
+      <section id="remote-moderation" class="table-panel" style="margin-top:20px;" hidden>
+        <div class="table-panel-header">
+          <h2>Live Moderation Queue</h2>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="meta-chip">staging DB · <span id="admin-endpoint"></span></span>
+            <button type="button" id="admin-refresh-btn" class="btn-reset" style="width:auto;">Refresh</button>
+            <button type="button" id="admin-disconnect-btn" class="btn-reset" style="width:auto;">Disconnect</button>
+          </div>
+        </div>
+
+        <p id="admin-status" class="form-success" hidden></p>
+
+        <div id="admin-connect" class="form-panel" style="margin-top:0;">
+          <h3 style="font-size:13px; margin:0 0 8px;">Connect to the admin API</h3>
+          <p class="field-hint" style="margin:0 0 12px;">
+            This is a static site with no request-time server, so it cannot hold
+            <code>ADMIN_API_TOKEN</code> — anything the page could read would already be published in a public
+            JS file. Paste your token instead.
+          </p>
+          <p class="field-hint" style="margin:0 0 12px;">
+            <strong>Held in memory only.</strong> It is never written to
+            <code>localStorage</code>, <code>sessionStorage</code>, IndexedDB or a cookie, never appears in a
+            URL, and is cleared from this field the moment it is read. Refreshing or closing the tab discards
+            it, so you will be asked again — that is the trade for leaving no credential at rest on this
+            machine.
+          </p>
+          <div class="form-row">
+            <label for="admin-token-input">ADMIN_API_TOKEN</label>
+            <input type="password" id="admin-token-input" autocomplete="off" spellcheck="false"
+                   placeholder="paste the module token" />
+            <p class="field-hint">Not stored — re-entered each page view.</p>
+          </div>
+          <button type="button" id="admin-connect-btn" class="btn-approve">Connect</button>
+        </div>
+
+        <div id="admin-queue-panel" hidden>
+          <div class="table-container">
+            <table class="screener-table">
+              <thead>
+                <tr>
+                  <th scope="col">Contributor</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Component / SKU</th>
+                  <th scope="col" class="col-num">Price</th>
+                  <th scope="col">Proof</th>
+                  <th scope="col">Submitted</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="remote-queue-body">
+                <tr class="table-loading-row"><td colspan="7">Not connected.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="field-hint" style="margin-top:8px;">
+            Approve promotes the submission into the core index with <code>originalMSRP: null</code> — a
+            submission reports an observed price, not a launch MSRP. Reject requires a canonical reason.
+          </p>
+        </div>
+      </section>
+
       <section class="table-panel" aria-labelledby="queue-heading" style="margin-top:20px;">
         <div class="table-panel-header">
           <h2 id="queue-heading">Submission Review Queue</h2>
           <div class="flex items-center gap-2 flex-wrap">
             <span id="queue-count" class="meta-chip">0 awaiting review</span>
             <button type="button" id="run-auto-accept" class="btn-approve">Run Auto-Accept Engine</button>
+            <button type="button" id="load-samples" class="btn-reset" style="width:auto;">Load sample queue</button>
+            <button type="button" id="clear-samples" class="btn-reset" style="width:auto;">Clear samples</button>
           </div>
         </div>
         <p class="field-hint" style="margin:0 0 10px;">
@@ -139,21 +203,24 @@ import { DEV_ECOSYSTEM_NAV } from "../config/navigation";
           Anonymous submissions, unknown SKUs, and out-of-tolerance prices are always left for a human.
         </p>
         <p id="auto-accept-result" class="form-success" hidden></p>
+        <p id="sample-result" class="form-success" hidden></p>
         <div class="table-container">
           <table class="screener-table">
             <thead>
               <tr>
-                <th scope="col">Component / SKU</th>
                 <th scope="col">Contributor</th>
-                <th scope="col" class="col-num">Reported</th>
+                <th scope="col">Category</th>
+                <th scope="col">Component / SKU</th>
+                <th scope="col" class="col-num">Price</th>
                 <th scope="col" class="col-num">Median ±%</th>
                 <th scope="col">Proof</th>
+                <th scope="col">Submitted</th>
                 <th scope="col">Status</th>
                 <th scope="col">Actions</th>
               </tr>
             </thead>
             <tbody id="queue-body">
-              <tr class="table-loading-row"><td colspan="7">No submissions awaiting review.</td></tr>
+              <tr class="table-loading-row"><td colspan="9">No submissions awaiting review.</td></tr>
             </tbody>
           </table>
         </div>
@@ -204,15 +271,18 @@ import { DEV_ECOSYSTEM_NAV } from "../config/navigation";
   import {
     approve, deny, flag, reopen, getReviewQueue, getReviewed, runAutoAcceptEngine, DENIAL_REASONS
   } from "@modules/admin/moderation";
+  import type { DenialReason, ModerationAction, SubmissionStatus } from "@modules/admin/contracts";
   import { fetchMarketData } from "@/services/dataService";
   import { evaluateAutoAccept } from "@modules/ai/engine";
   import { toContributorSchema } from "@modules/contributors/registry";
   import type { HardwareComponent } from "@modules/database/contracts";
   import type { PriceSubmission } from "@modules/contributors/contracts";
-  import { get as getSettings, set as setSettings, reset as resetSettings } from "@/lib/settings";
+  import { get as getSettings, set as setSettings, reset as resetSettings } from "@modules/admin/settings";
   import { getNavItem } from "@/config/navigation";
-  import { formatPrice, escapeHtml } from "@/lib/format";
-  import { CATEGORY_LABELS, specSummary } from "@/lib/specDisplay";
+  import { formatPrice, escapeHtml } from "@/ui/format";
+  import { CATEGORY_LABELS, specSummary } from "@/ui/specDisplay";
+  import { initAdminModeration } from "@/ui/adminModeration";
+  import { clearSampleQueue, isDemoSubmission, loadSampleQueue } from "@modules/admin/demoQueue";
   import type { SiteSettings } from "@/lib/types";
 
   const session = getSession();
@@ -227,6 +297,8 @@ import { DEV_ECOSYSTEM_NAV } from "../config/navigation";
     initSettingsForm();
     initNavForm();
     initAutoAcceptButton();
+    initSampleButtons();
+    initAdminModeration();
     void loadComponents();
   }
 
@@ -312,14 +384,26 @@ import { DEV_ECOSYSTEM_NAV } from "../config/navigation";
     renderAll();
   }
 
-  const STATUS_BADGE: Record<PriceSubmission["status"], string> = {
+  /**
+   * Every row action goes through one typed dispatcher keyed on
+   * `ModerationAction`, so adding a new action to the contract fails the build
+   * here until it is handled, rather than silently doing nothing in the UI.
+   */
+  const ACTIONS: Record<ModerationAction, (id: string, reason?: DenialReason | string) => void> = {
+    approve: (id) => approve(id),
+    deny: (id, reason) => deny(id, reason ?? "Denied by moderator"),
+    flag: (id) => flag(id),
+    reopen: (id) => reopen(id)
+  };
+
+  const STATUS_BADGE: Record<SubmissionStatus, string> = {
     pending: "badge-pending",
     approved: "badge-fair",
     denied: "badge-scalper",
     flagged: "badge-scalper"
   };
 
-  const STATUS_LABEL: Record<PriceSubmission["status"], string> = {
+  const STATUS_LABEL: Record<SubmissionStatus, string> = {
     pending: "Pending",
     approved: "Approved",
     denied: "Denied",
@@ -337,7 +421,7 @@ import { DEV_ECOSYSTEM_NAV } from "../config/navigation";
     if (queueBody) {
       queueBody.innerHTML = queue.length
         ? queue.map(renderQueueRow).join("")
-        : '<tr class="table-loading-row"><td colspan="7">No submissions awaiting review.</td></tr>';
+        : '<tr class="table-loading-row"><td colspan="9">No submissions awaiting review.</td></tr>';
     }
 
     const reviewedBody = document.getElementById("reviewed-body");
@@ -366,26 +450,46 @@ import { DEV_ECOSYSTEM_NAV } from "../config/navigation";
 
     const reasonOptions = DENIAL_REASONS.map((r) => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join("");
 
+    const submitted = new Date(item.submittedAt);
+    // Hash shown truncated: enough to tell two contributors apart at a glance
+    // without pasting a UUID into every row.
+    const hashPreview = item.contributorHash ? item.contributorHash.replace(/-/g, "").slice(0, 8) : "—";
+    const proofHost = (() => {
+      try {
+        return new URL(item.proofUrl).hostname;
+      } catch {
+        return "invalid URL";
+      }
+    })();
+
     return (
       "<tr>" +
+      `<td><span class="component-name">${escapeHtml(item.contributorId)}</span>` +
+      (isDemoSubmission(item) ? '<span class="component-category">sample</span>' : "") +
+      `<br><span class="spec-meta" title="contributorHash">${escapeHtml(hashPreview)}</span>` +
+      `<br>${tier}</td>` +
+      `<td><span class="component-category">${escapeHtml(CATEGORY_LABELS[item.category])}</span></td>` +
       `<td><span class="component-name">${escapeHtml(item.componentName)}</span>` +
-      `<span class="component-category">${escapeHtml(CATEGORY_LABELS[item.category])}</span>` +
       `<br><span class="spec-meta">${escapeHtml(item.sku)}</span>` +
       `<br><span class="spec-meta">${escapeHtml(specSummary(item))}</span></td>` +
-      `<td>${escapeHtml(item.contributorId)}<br>${tier}</td>` +
       `<td class="num-cell market-price">${formatPrice(item.reportedPrice, item.currency)}</td>` +
       `<td class="num-cell">${medianCell}</td>` +
-      `<td><a href="${escapeHtml(item.proofUrl)}" target="_blank" rel="noopener noreferrer">View</a></td>` +
+      // Host shown alongside the link so a moderator can spot an unwhitelisted
+      // source without opening it.
+      `<td><a href="${escapeHtml(item.proofUrl)}" target="_blank" rel="noopener noreferrer">View</a>` +
+      `<br><span class="spec-meta">${escapeHtml(proofHost)}</span></td>` +
+      `<td><span class="spec-year" title="${escapeHtml(item.submittedAt)}">${escapeHtml(submitted.toLocaleDateString())}` +
+      `<br>${escapeHtml(submitted.toLocaleTimeString())}</span></td>` +
       `<td><span class="badge ${STATUS_BADGE[item.status]}"><span class="badge-dot"></span>${STATUS_LABEL[item.status]}</span></td>` +
       `<td>` +
       `<div class="admin-actions" style="margin-bottom:6px;">` +
-      `<button type="button" class="btn-approve" data-approve="${escapeHtml(item.submissionId)}">Approve</button>` +
-      `<button type="button" class="btn-reject" data-flag="${escapeHtml(item.submissionId)}">Flag</button>` +
+      `<button type="button" class="btn-approve" data-action="approve" data-submission="${escapeHtml(item.submissionId)}">Approve</button>` +
+      `<button type="button" class="btn-reject" data-action="flag" data-submission="${escapeHtml(item.submissionId)}">Flag</button>` +
       `<button type="button" class="btn-reset" style="width:auto;" data-schema="${escapeHtml(item.submissionId)}">Schema</button>` +
       `</div>` +
       `<div class="admin-actions">` +
       `<select class="deny-reason" data-reason-for="${escapeHtml(item.submissionId)}" aria-label="Denial reason">${reasonOptions}</select>` +
-      `<button type="button" class="btn-reject" data-deny="${escapeHtml(item.submissionId)}">Deny</button>` +
+      `<button type="button" class="btn-reject" data-action="deny" data-submission="${escapeHtml(item.submissionId)}">Deny</button>` +
       `</div>` +
       `</td>` +
       "</tr>"
@@ -404,7 +508,7 @@ import { DEV_ECOSYSTEM_NAV } from "../config/navigation";
       `<td><span class="spec-year">${escapeHtml(note)}</span></td>` +
       `<td><span class="spec-year">${item.reviewedAt ? new Date(item.reviewedAt).toLocaleString() : "—"}</span></td>` +
       `<td class="admin-actions">` +
-      `<button type="button" class="btn-reset" style="width:auto;" data-reopen="${escapeHtml(item.submissionId)}">Reopen</button>` +
+      `<button type="button" class="btn-reset" style="width:auto;" data-action="reopen" data-submission="${escapeHtml(item.submissionId)}">Reopen</button>` +
       `<button type="button" class="btn-reset" style="width:auto;" data-schema="${escapeHtml(item.submissionId)}">Schema</button>` +
       `</td>` +
       "</tr>"
@@ -412,32 +516,21 @@ import { DEV_ECOSYSTEM_NAV } from "../config/navigation";
   }
 
   function bindRowActions(): void {
-    document.querySelectorAll<HTMLButtonElement>("[data-approve]").forEach((btn) => {
+    // One binding for all four actions; the button declares which it is via
+    // `data-action`, checked against the `ModerationAction` union.
+    document.querySelectorAll<HTMLButtonElement>("[data-action]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        approve(btn.getAttribute("data-approve") as string);
-        renderAll();
-      });
-    });
+        const action = btn.dataset.action as ModerationAction;
+        const id = btn.dataset.submission as string;
+        const handler = ACTIONS[action];
+        if (!handler) return;
 
-    document.querySelectorAll<HTMLButtonElement>("[data-deny]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-deny") as string;
-        const select = document.querySelector<HTMLSelectElement>(`[data-reason-for="${id}"]`);
-        deny(id, select?.value || "Denied by moderator");
-        renderAll();
-      });
-    });
+        const reason =
+          action === "deny"
+            ? document.querySelector<HTMLSelectElement>(`[data-reason-for="${id}"]`)?.value
+            : undefined;
 
-    document.querySelectorAll<HTMLButtonElement>("[data-flag]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        flag(btn.getAttribute("data-flag") as string);
-        renderAll();
-      });
-    });
-
-    document.querySelectorAll<HTMLButtonElement>("[data-reopen]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        reopen(btn.getAttribute("data-reopen") as string);
+        handler(id, reason);
         renderAll();
       });
     });
@@ -462,6 +555,28 @@ import { DEV_ECOSYSTEM_NAV } from "../config/navigation";
     pre.textContent = submission
       ? JSON.stringify(toContributorSchema(submission), null, 2)
       : "// Submission no longer exists.";
+  }
+
+  function initSampleButtons(): void {
+    const resultEl = document.getElementById("sample-result") as HTMLParagraphElement | null;
+    const flash = (message: string) => {
+      if (!resultEl) return;
+      resultEl.hidden = false;
+      resultEl.textContent = message;
+      setTimeout(() => { resultEl.hidden = true; }, 3000);
+    };
+
+    document.getElementById("load-samples")?.addEventListener("click", () => {
+      const added = loadSampleQueue();
+      renderAll();
+      flash(added === 0 ? "Sample rows are already loaded." : `Loaded ${added} sample submission(s), marked "sample".`);
+    });
+
+    document.getElementById("clear-samples")?.addEventListener("click", () => {
+      const removed = clearSampleQueue();
+      renderAll();
+      flash(removed === 0 ? "No sample rows to clear." : `Removed ${removed} sample submission(s). Real submissions untouched.`);
+    });
   }
 
   function initAutoAcceptButton(): void {
