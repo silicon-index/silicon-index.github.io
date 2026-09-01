@@ -3,12 +3,18 @@
   "include": [
     ".astro/types.d.ts",
     "src/**/*",
-    "scripts/**/*.ts"
+    "scripts/**/*.ts",
+    "deploy/admin/**/*.ts"
   ],
+  // The admin panel bootstrap is type-checked (it is Node/TypeScript and runs
+  // our own handler); the Bun-based module servers are not, because they use
+  // `Bun.*` globals and this repo does not depend on @types/bun.
   "exclude": [
     "dist",
     "legacy-static",
-    "deploy"
+    "deploy/ai",
+    "deploy/database",
+    "deploy/scrapers"
   ],
   "compilerOptions": {
     "baseUrl": ".",

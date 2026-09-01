@@ -126,65 +126,21 @@ import { DEV_ECOSYSTEM_NAV } from "../../config/navigation";
         </p>
       </section>
 
-      <section id="remote-moderation" class="table-panel" style="margin-top:20px;" hidden>
-        <div class="table-panel-header">
-          <h2>Live Moderation Queue</h2>
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="meta-chip">staging DB · <span id="admin-endpoint"></span></span>
-            <button type="button" id="admin-refresh-btn" class="btn-reset" style="width:auto;">Refresh</button>
-            <button type="button" id="admin-disconnect-btn" class="btn-reset" style="width:auto;">Disconnect</button>
-          </div>
-        </div>
-
-        <p id="admin-status" class="form-success" hidden></p>
-
-        <div id="admin-connect" class="form-panel" style="margin-top:0;">
-          <h3 style="font-size:13px; margin:0 0 8px;">Connect to the admin API</h3>
-          <p class="field-hint" style="margin:0 0 12px;">
-            This is a static site with no request-time server, so it cannot hold
-            <code>ADMIN_API_TOKEN</code> — anything the page could read would already be published in a public
-            JS file. Paste your token instead.
-          </p>
-          <p class="field-hint" style="margin:0 0 12px;">
-            <strong>Held in memory only.</strong> It is never written to
-            <code>localStorage</code>, <code>sessionStorage</code>, IndexedDB or a cookie, never appears in a
-            URL, and is cleared from this field the moment it is read. Refreshing or closing the tab discards
-            it, so you will be asked again — that is the trade for leaving no credential at rest on this
-            machine.
-          </p>
-          <div class="form-row">
-            <label for="admin-token-input">ADMIN_API_TOKEN</label>
-            <input type="password" id="admin-token-input" autocomplete="off" spellcheck="false"
-                   placeholder="paste the module token" />
-            <p class="field-hint">Not stored — re-entered each page view.</p>
-          </div>
-          <button type="button" id="admin-connect-btn" class="btn-approve">Connect</button>
-        </div>
-
-        <div id="admin-queue-panel" hidden>
-          <div class="table-container">
-            <table class="screener-table">
-              <thead>
-                <tr>
-                  <th scope="col">Contributor</th>
-                  <th scope="col">Category</th>
-                  <th scope="col">Component / SKU</th>
-                  <th scope="col" class="col-num">Price</th>
-                  <th scope="col">Proof</th>
-                  <th scope="col">Submitted</th>
-                  <th scope="col">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="remote-queue-body">
-                <tr class="table-loading-row"><td colspan="7">Not connected.</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <p class="field-hint" style="margin-top:8px;">
-            Approve promotes the submission into the core index with <code>originalMSRP: null</code> — a
-            submission reports an observed price, not a launch MSRP. Reject requires a canonical reason.
-          </p>
-        </div>
+      <section class="form-panel" aria-labelledby="live-heading">
+        <h2 id="live-heading" style="font-size:14px; margin:0 0 8px;">Live Moderation Queue</h2>
+        <p class="form-intro" style="margin:0 0 10px;">
+          The live queue is <strong>not served from this page</strong>. Real moderation — the only path that
+          promotes a submission out of staging and into the trusted index — runs on the private admin host
+          (<code>deploy/admin/server.ts</code>), which reads <code>ADMIN_API_TOKEN</code> from its own
+          environment and renders the queue server-side.
+        </p>
+        <p class="field-hint" style="margin:0;">
+          This portal is a static site with no request-time server, so it has nowhere to keep a tier-2
+          credential: anything this page could read would already be published in a public JS file. It
+          therefore holds no token at all — not in memory, not in storage, and never in a form field. Reach
+          the real panel over the private network, VPN, or SSH tunnel to the LXC host; see
+          <code>deploy/README.md</code> § Admin panel.
+        </p>
       </section>
 
       <section class="table-panel" aria-labelledby="queue-heading" style="margin-top:20px;">
@@ -281,7 +237,6 @@ import { DEV_ECOSYSTEM_NAV } from "../../config/navigation";
   import { getNavItem } from "@/config/navigation";
   import { formatPrice, escapeHtml } from "@/ui/format";
   import { CATEGORY_LABELS, specSummary } from "@/ui/specDisplay";
-  import { initAdminModeration } from "@/ui/adminModeration";
   import { clearSampleQueue, isDemoSubmission, loadSampleQueue } from "@modules/admin/demoQueue";
   import type { SiteSettings } from "@/lib/types";
 
@@ -298,7 +253,6 @@ import { DEV_ECOSYSTEM_NAV } from "../../config/navigation";
     initNavForm();
     initAutoAcceptButton();
     initSampleButtons();
-    initAdminModeration();
     void loadComponents();
   }
 

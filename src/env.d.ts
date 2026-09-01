@@ -15,14 +15,14 @@ interface ImportMetaEnv {
    */
   readonly PUBLIC_API_URL?: string;
 
-  /**
-   * Base URL of the deployed admin API (`src/modules/admin/api.ts`).
-   *
-   * The URL is public; the credential is not. `ADMIN_API_TOKEN` is never a
-   * `PUBLIC_` var and never reaches the browser — the operator supplies it at
-   * runtime in the dashboard.
+  /*
+   * There is deliberately no `PUBLIC_ADMIN_API_URL`. The admin API is not
+   * called from a browser at all: the moderation panel is server-rendered on
+   * the private admin host (`deploy/admin/server.ts`), which holds
+   * `ADMIN_API_TOKEN` in its own environment and calls the handler in-process.
+   * Publishing the endpoint here would only advertise a privileged service the
+   * portal has no credential for.
    */
-  readonly PUBLIC_ADMIN_API_URL?: string;
 }
 
 interface ImportMeta {

@@ -170,5 +170,12 @@ export function createAdminApi(deps: AdminApiDeps) {
     return notFound(pathname);
   }
 
-  return withApiMiddleware(route as (request: Request, env: ApiEnv) => Promise<Response>);
+  // The cast in and the cast out are a pair. `withApiMiddleware` is typed
+  // against the shared `ApiEnv`, which deliberately does not name any module's
+  // secret; the return type is narrowed back to `AdminApiEnv` so a caller that
+  // forgets to pass `ADMIN_API_TOKEN` is a compile error rather than a 503.
+  return withApiMiddleware(route as (request: Request, env: ApiEnv) => Promise<Response>) as (
+    request: Request,
+    env: AdminApiEnv
+  ) => Promise<Response>;
 }

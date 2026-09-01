@@ -25,9 +25,12 @@
  *   6. No client-reachable file names a server-side secret. A static build has
  *      no request-time server, so anything a page can read is public: a token
  *      referenced there is a published credential, not a protected one.
- *   7. Modules holding a credential in memory never touch a persistence API.
- *      A token written to storage outlives the tab and becomes retrievable by
- *      a later XSS bug or by anyone on a shared machine.
+ *   7. No client-reachable file presents a tier-2 service credential. Rule 6
+ *      stops a page reading one from the environment; this stops the other
+ *      route in — an operator pasting one into a field, which put a live
+ *      secret inside a browser and only ever lived as long as the tab. The
+ *      admin panel is server-rendered on a private host instead, so the
+ *      browser carries no credential at all.
  *   8. No block comment is terminated early. Writing a glob such as
  *      `modules/<star>/api.ts` inside a JSDoc block closes it at the `*` + `/`,
  *      and everything after is parsed as code. tsc catches this only for files
@@ -97,11 +100,10 @@ const API_RUNTIME_ALLOWLIST = [/^drizzle-orm(\/|$)/];
  * undefined (broken). Both outcomes are worse than failing the build here.
  */
 /**
- * Files that hold a credential in volatile memory and must keep it there.
- * Persisting it would defeat the entire design.
+ * The header a tier-2 service token travels in. Client-reachable code must
+ * never send it: the portal is a static site with no credential to send.
  */
-const MEMORY_ONLY = new Set(["src/ui/adminModeration.ts"]);
-const PERSISTENCE_APIS = ["localStorage", "sessionStorage", "indexedDB", "document.cookie"];
+const SERVICE_TOKEN_HEADER = "x-service-token";
 
 const SERVER_SECRETS = [
   "ADMIN_API_TOKEN",
@@ -196,16 +198,15 @@ for (const file of files) {
     }
   }
 
-  // Rule 7: a memory-only module must not reach for storage. Matched as a real
-  // call/member access, so the file can still document what it refuses to use.
-  if (MEMORY_ONLY.has(file)) {
-    for (const api of PERSISTENCE_APIS) {
-      const used = new RegExp(String.raw`(?<![\w.\`'"])${api.replace(".", "\\.")}\s*(?:\.|\[)`);
-      if (used.test(source)) {
-        violations.push(
-          `${file}: uses ${api} — this module holds a credential in memory and must not persist it`
-        );
-      }
+  // Rule 7: client-reachable code must not present a service credential.
+  // Matched as a quoted header name — a real use — so a page is still free to
+  // explain in prose why it holds no token.
+  if (isClientReachable(file) && !file.endsWith("api.ts")) {
+    if (new RegExp(String.raw`["'\`]${SERVICE_TOKEN_HEADER}["'\`]`, "i").test(source)) {
+      violations.push(
+        `${file}: sends the ${SERVICE_TOKEN_HEADER} header — client-reachable code has no tier-2 ` +
+        `credential to send. Privileged calls belong on the private admin host (deploy/admin/server.ts).`
+      );
     }
   }
 
@@ -288,5 +289,5 @@ console.log(`Architecture check passed — ${files.length} files scanned, ` +
             `${contracts.length} contracts pure, ${apis.length} API handlers portable, ` +
             `${SERVER_ONLY.size} server-only module(s) unreachable from client code, ` +
             `airgap intact for ${AIRGAPPED_ENTRIES.size} public write path(s), ` +
-            `no server secret in client code, ` +
-            `${MEMORY_ONLY.size} memory-only module(s) free of persistence, no import cycles.`);
+            `no server secret and no service credential in client code, ` +
+            `no import cycles.`);

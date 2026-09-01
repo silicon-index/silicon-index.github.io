@@ -1,0 +1,52 @@
+// Cloudflare deployment for the PORTAL — static assets, no Worker script.
+//
+// ────────────────────────────────────────────────────────────────────────
+// WHY THERE IS NO `main`
+//
+// The portal is an Astro static build (`output: "static"` in
+// astro.config.mjs): `npm run build` emits plain HTML, CSS and JS into
+// `dist/` and there is no request-time server. Wrangler's default assumption
+// is a script Worker, so without this file `wrangler versions upload` fails
+// with "Worker's entry point not specified" — it was looking for code that
+// does not exist rather than for a directory to serve.
+//
+// `assets.directory` is the whole deployment. Adding a `main` here would mean
+// inventing a Worker the portal does not have.
+//
+// WHAT THIS CONFIG DOES **NOT** DEPLOY
+//
+//   The module APIs. `database`, `ai` and `scrapers` each have their own
+//   config and are deployed explicitly:
+//       npx wrangler deploy --config deploy/database/wrangler.toml
+//   Being in this repo does not put them on this Worker; only `dist/` ships.
+//
+//   The admin panel. `deploy/admin/` is Node-only (`node:http`), holds
+//   `ADMIN_API_TOKEN` in its environment, and must stay on the private LXC
+//   host. It is not part of the Astro build, so it cannot reach `dist/` — and
+//   it must never be given a public Cloudflare route. See deploy/README.md
+//   § Admin panel.
+//
+// BUILD SETTINGS (Cloudflare dashboard → Workers → Builds)
+//   Build command:   npm run build
+//   Deploy command:  npx wrangler deploy          (production)
+//                    npx wrangler versions upload (preview branches)
+//   Both read this file; neither needs a path argument once `assets` is set.
+// ────────────────────────────────────────────────────────────────────────
+{
+  "name": "silicon-index",
+  "compatibility_date": "2026-09-01",
+
+  "assets": {
+    "directory": "./dist",
+
+    // Astro builds directory-style routes (`dist/admin/index.html`), so
+    // `/admin` and `/admin/` must both resolve to that file.
+    "html_handling": "auto-trailing-slash",
+
+    // There is no `src/pages/404.astro`, so there is no `dist/404.html` to
+    // point at. Cloudflare's own 404 is served instead. Add a 404 page first
+    // if you want this switched to "404-page" — naming a file that is not in
+    // the build is how a deploy starts serving blank pages.
+    "not_found_handling": "none"
+  }
+}

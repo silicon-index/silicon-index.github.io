@@ -46,6 +46,32 @@ reflects the real request path.
 Images are ~130 MB and contain no `node_modules`, because the handlers have no
 dependencies to install.
 
+## Portal on Cloudflare (static assets)
+
+The portal itself is not a module API and has no Worker script. `wrangler.jsonc`
+in the **repository root** deploys it as static assets:
+
+```jsonc
+{ "name": "silicon-index", "assets": { "directory": "./dist" } }
+```
+
+| Setting | Value |
+| :--- | :--- |
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler deploy` (production) / `npx wrangler versions upload` (previews) |
+| Output | `dist/` — Astro's static build |
+
+**Why the first attempt failed.** Wrangler assumes a script Worker and looks for
+an entry point; `output: "static"` means there is none, so
+`wrangler versions upload` errored with "Worker's entry point not specified".
+The fix is `assets.directory`, not a `main` — adding `main` would mean writing a
+Worker the portal does not need. GitHub Pages continues to deploy from
+`.github/workflows/deploy.yml`; the two targets serve the same `dist/`.
+
+**This config ships `dist/` and nothing else.** The module APIs keep their own
+`--config` files, and `deploy/admin/` is Node-only, is not part of the Astro
+build, and must never be given a public Cloudflare route — see § Admin panel.
+
 ## Cloudflare Workers
 
 ```bash
@@ -92,8 +118,94 @@ variables. Both reach the handler through the same second argument.
 Every module API is **fail-closed**: without its token in the environment, all
 routes return 503. Tokens are per module, so one credential opens exactly one
 service. `ADMIN_API_TOKEN` and `DATABASE_API_TOKEN` are never `PUBLIC_` and
-never reach a browser — the admin dashboard asks the operator to paste theirs,
-and `npm run check` fails the build if a page ever reads one.
+never reach a browser at all — the admin panel runs on a private host that
+holds the token in its own environment (see below), and `npm run check` fails
+the build if client-reachable code ever reads a server secret or sends the
+`x-service-token` header.
+
+## Admin panel (private LXC host)
+
+`deploy/admin/` is different from the three module deployments above: it is not
+a public API, it is the **operator's dashboard**, and it never runs on the
+static portal.
+
+| | |
+| :--- | :--- |
+| Bootstrap | `deploy/admin/server.ts` (Node — `node:http`, not a Worker) |
+| View | `deploy/admin/dashboard.ts` — server-rendered HTML, zero client JS |
+| Unit | `deploy/admin/silicon-index-admin.service` |
+| Handler | `src/modules/admin/api.ts`, called in-process and never exposed |
+
+### Why it is not on the portal
+
+The portal is a static site on GitHub Pages with no request-time server, so a
+page there has nowhere to keep a tier-2 secret: Astro inlines only `PUBLIC_*`
+into the bundle, and anything inlined is published. The previous dashboard
+worked around that by asking the operator to paste `ADMIN_API_TOKEN` and
+holding it in a module-scoped variable — a live credential inside a browser,
+lost on every refresh. That is gone, along with `PUBLIC_ADMIN_API_URL`: the
+browser now carries no admin credential of any kind.
+
+Here, an environment variable is a real place to keep a secret. The token is
+read once at boot, attached to each in-process call, and verified by the same
+`requireServiceToken` double-HMAC constant-time comparison an external caller
+would face — the panel is not a trusted-caller shortcut around authentication.
+
+### Run it
+
+```bash
+npm ci                                   # devDependencies included: vite-node runs the panel
+cp .env.example .env                     # then set ADMIN_API_TOKEN (openssl rand -base64 32)
+npm run admin:serve
+```
+
+It refuses to start if `ADMIN_API_TOKEN` is unset or shorter than 24
+characters, so a misconfigured unit is a dead unit rather than an open admin
+panel. Routes: `GET /health`, `GET /` (queue), `POST /decide`.
+
+### Install on the LXC container
+
+```bash
+adduser --system --group --home /opt/silicon-index siadmin
+git clone <repo> /opt/silicon-index && cd /opt/silicon-index && npm ci
+
+install -d -m 0750 /etc/silicon-index
+install -m 0600 -o siadmin -g siadmin /dev/null /etc/silicon-index/admin.env
+printf 'ADMIN_API_TOKEN=%s\n' "$(openssl rand -base64 32)" >> /etc/silicon-index/admin.env
+printf 'DATABASE_URL=file:/opt/silicon-index/local.db\n'    >> /etc/silicon-index/admin.env
+
+cp deploy/admin/silicon-index-admin.service /etc/systemd/system/
+systemctl daemon-reload && systemctl enable --now silicon-index-admin
+```
+
+Configuration comes from the environment, and an already-set variable always
+wins over the repo's `.env` — so the systemd `EnvironmentFile=` above is
+authoritative and a stray `.env` in the checkout cannot override it.
+
+| Variable | Default | Purpose |
+| :--- | :--- | :--- |
+| `ADMIN_API_TOKEN` | *(required)* | Tier-2 credential; ≥24 chars or the panel will not start |
+| `ADMIN_PANEL_PORT` | `8081` | Listen port (`PORT` is honoured as a fallback) |
+| `ADMIN_PANEL_HOST` | `127.0.0.1` | Bind address (`HOST` as a fallback) |
+| `DATABASE_URL` | `file:local.db` | Staging/core database |
+| `DATABASE_AUTH_TOKEN` | — | Required only for a remote `libsql://` URL |
+
+### Trust boundary — read before exposing it
+
+**Reaching this port is being an administrator.** Removing the paste step means
+the browser presents no credential, so there is no login in front of the queue:
+the network path *is* the authentication.
+
+- It binds to `127.0.0.1` unless `ADMIN_PANEL_HOST` says otherwise, and logs a
+  warning when bound wider. Never put it on `0.0.0.0` with a routable address.
+- Reach it over the LXC host's private bridge, a VPN, or an SSH tunnel:
+  `ssh -N -L 8081:127.0.0.1:8081 siadmin@<lxc-host>`, then open
+  `http://127.0.0.1:8081`.
+- If it must be reachable more widely, put an authenticating reverse proxy in
+  front of it and terminate TLS there.
+- Mutating posts carry a per-process CSRF token and require a same-origin
+  `Origin` header, so a page the operator happens to have open cannot promote a
+  submission into the trusted index.
 
 ## Before exposing these publicly
 

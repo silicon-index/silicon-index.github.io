@@ -11,6 +11,7 @@
     "check:arch": "node scripts/check-architecture.mjs",
     "check": "node scripts/check-architecture.mjs && astro check",
     "seed:catalog": "vite-node scripts/seed-catalog.ts --",
+    "admin:serve": "vite-node deploy/admin/server.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"
