@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — Silicon Index</title>
+  <meta name="description" content="Sign in or register a contributor account on Silicon Index." />
+  <meta name="theme-color" content="#0b0f19" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">SI</span>
+        <span class="brand-name">Silicon Index</span>
+        <span class="brand-tag">MVP Screener</span>
+      </div>
+      <nav class="topbar-nav" aria-label="Primary">
+        <a class="nav-link" href="index.html">Screener</a>
+        <a class="nav-link" href="contribute.html">Contribute</a>
+      </nav>
+      <div class="topbar-meta">
+        <span id="nav-auth-slot" class="nav-auth-slot"></span>
+      </div>
+    </header>
+
+    <div class="layout layout--form">
+      <main class="content content--narrow">
+        <section class="form-panel" aria-labelledby="auth-heading">
+          <div class="auth-tabs" role="tablist">
+            <button type="button" class="auth-tab auth-tab--active" id="tab-login" role="tab" aria-selected="true">Sign In</button>
+            <button type="button" class="auth-tab" id="tab-register" role="tab" aria-selected="false">Register</button>
+          </div>
+
+          <h1 id="auth-heading" class="visually-hidden">Sign In or Register</h1>
+
+          <p class="form-note">
+            Demo-only accounts, stored in this browser via <code>localStorage</code> — there is no server or real
+            authentication yet (see <a href="dev-index.md">Phase 5</a> of the roadmap). Try the seeded admin account:
+            <code>admin</code> / <code>admin123</code>.
+          </p>
+
+          <form id="login-form">
+            <div class="form-row">
+              <label for="li-username">Username</label>
+              <input type="text" id="li-username" required autocomplete="username" />
+            </div>
+            <div class="form-row">
+              <label for="li-password">Password</label>
+              <input type="password" id="li-password" required autocomplete="current-password" />
+            </div>
+            <p id="login-error" class="form-error" hidden></p>
+            <button type="submit" class="btn-primary">Sign In</button>
+          </form>
+
+          <form id="register-form" hidden>
+            <div class="form-row">
+              <label for="re-username">Username</label>
+              <input type="text" id="re-username" required autocomplete="username" />
+            </div>
+            <div class="form-row">
+              <label for="re-password">Password (min 6 characters)</label>
+              <input type="password" id="re-password" required minlength="6" autocomplete="new-password" />
+            </div>
+            <p class="field-hint">New accounts are registered as contributors. Contributions can still be submitted anonymously without an account.</p>
+            <p id="register-error" class="form-error" hidden></p>
+            <p id="register-success" class="form-success" hidden></p>
+            <button type="submit" class="btn-primary">Create Account</button>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <footer class="footer">
+      <p>Silicon Index MVP · Client-side demo — accounts are stored only in this browser, not on a server.</p>
+      <p class="footer-links">
+        <a href="index.html">Back to Screener</a>
+      </p>
+    </footer>
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="contributions.js"></script>
+  <script src="nav.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      document.addEventListener("DOMContentLoaded", function () {
+        var tabLogin = document.getElementById("tab-login");
+        var tabRegister = document.getElementById("tab-register");
+        var loginForm = document.getElementById("login-form");
+        var registerForm = document.getElementById("register-form");
+
+        tabLogin.addEventListener("click", function () { switchTab(true); });
+        tabRegister.addEventListener("click", function () { switchTab(false); });
+
+        function switchTab(showLogin) {
+          loginForm.hidden = !showLogin;
+          registerForm.hidden = showLogin;
+          tabLogin.classList.toggle("auth-tab--active", showLogin);
+          tabRegister.classList.toggle("auth-tab--active", !showLogin);
+          tabLogin.setAttribute("aria-selected", String(showLogin));
+          tabRegister.setAttribute("aria-selected", String(!showLogin));
+        }
+
+        loginForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+          var errorEl = document.getElementById("login-error");
+          errorEl.hidden = true;
+          var username = document.getElementById("li-username").value;
+          var password = document.getElementById("li-password").value;
+
+          window.SiAuth.login(username, password).then(function (result) {
+            if (!result.ok) {
+              errorEl.hidden = false;
+              errorEl.textContent = result.error;
+              return;
+            }
+            window.location.href = result.session.role === "admin" ? "admin.html" : "index.html";
+          });
+        });
+
+        registerForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+          var errorEl = document.getElementById("register-error");
+          var successEl = document.getElementById("register-success");
+          errorEl.hidden = true;
+          successEl.hidden = true;
+          var username = document.getElementById("re-username").value;
+          var password = document.getElementById("re-password").value;
+
+          window.SiAuth.register(username, password).then(function (result) {
+            if (!result.ok) {
+              errorEl.hidden = false;
+              errorEl.textContent = result.error;
+              return;
+            }
+            successEl.hidden = false;
+            successEl.textContent = "Account created. You can sign in now.";
+            registerForm.reset();
+            switchTab(true);
+          });
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

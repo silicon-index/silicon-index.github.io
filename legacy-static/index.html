@@ -30,9 +30,16 @@
         <span class="brand-name">Silicon Index</span>
         <span class="brand-tag">MVP Screener</span>
       </div>
+      <nav class="topbar-nav" aria-label="Primary">
+        <a class="nav-link nav-link--active" href="index.html">Screener</a>
+        <a class="nav-link" href="contribute.html">Contribute</a>
+        <a class="nav-link nav-link--support" href="#support-panel">♥ Support</a>
+      </nav>
+
       <div class="topbar-meta">
         <span id="row-count" class="meta-chip">0 components</span>
         <span class="meta-chip meta-chip--live">● live mock data</span>
+        <span id="nav-auth-slot" class="nav-auth-slot"></span>
       </div>
     </header>
 
@@ -83,7 +90,7 @@
 
       <main class="content">
 
-        <section class="table-panel" aria-labelledby="screener-heading">
+        <section class="table-panel" aria-labelledby="screener-heading" id="community-panel-anchor">
           <div class="table-panel-header">
             <h1 id="screener-heading">Market Screener</h1>
             <div class="sort-controls">
@@ -120,6 +127,63 @@
           <p id="empty-state" class="empty-state" hidden>No components match the current filters.</p>
         </section>
 
+        <section class="table-panel community-panel" aria-labelledby="community-heading">
+          <div class="table-panel-header">
+            <h2 id="community-heading">Community Submissions</h2>
+            <a class="btn-link" href="contribute.html">+ Submit a price</a>
+          </div>
+          <p class="ecosystem-intro">
+            Anyone can submit an observed market price anonymously or while signed in. Entries start as
+            <strong>Pending Validation</strong> and only appear in the main screener once an admin marks them
+            <strong>Trusted Contributor</strong> in the <a href="admin.html">Admin Panel</a>.
+          </p>
+          <div class="table-container">
+            <table class="screener-table">
+              <thead>
+                <tr>
+                  <th scope="col">Component</th>
+                  <th scope="col">Socket / Gen</th>
+                  <th scope="col" class="col-num">Observed Price</th>
+                  <th scope="col">Contributor</th>
+                  <th scope="col">Trust</th>
+                </tr>
+              </thead>
+              <tbody id="community-table-body">
+                <tr class="table-loading-row"><td colspan="5">No community submissions yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="table-panel community-panel" aria-labelledby="contributors-heading">
+          <div class="table-panel-header">
+            <h2 id="contributors-heading">Contributors</h2>
+            <a class="btn-link" id="contributor-guidelines-link" href="https://github.com/silicon-index/silicon-index-contributors.github.io/tree/dev" target="_blank" rel="noopener noreferrer">Contributor guidelines (dev branch) ↗</a>
+          </div>
+          <p class="ecosystem-intro">
+            This index lists contributors whose submissions passed admin check-up in the
+            <a href="admin.html">Admin Panel</a> — pending and rejected entries never appear here. Each record is
+            either an anonymous approved contribution or a signed-in Trusted Contributor; no personal identifiers
+            are ever shown. Shape mirrors <code>contributors-index.json</code>, the interim schema for the
+            (not-yet-deployed) <a href="https://github.com/silicon-index/silicon-index-contributors.github.io/tree/dev" target="_blank" rel="noopener noreferrer">silicon-index-contributors</a> site.
+          </p>
+          <div class="table-container">
+            <table class="screener-table">
+              <thead>
+                <tr>
+                  <th scope="col">Contributor</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="col-num">Approved Submissions</th>
+                  <th scope="col">Last Approved</th>
+                </tr>
+              </thead>
+              <tbody id="contributors-table-body">
+                <tr class="table-loading-row"><td colspan="4">No contributors yet — none have passed check-up.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
         <section class="ecosystem-panel" aria-labelledby="ecosystem-heading">
           <div class="table-panel-header">
             <h2 id="ecosystem-heading">Ecosystem</h2>
@@ -142,8 +206,8 @@
               <span class="ecosystem-card-desc">REST/serverless microservices, telemetry endpoints, and data delivery.</span>
               <span class="ecosystem-card-repo">silicon-index-backend-api</span>
             </a>
-            <a class="ecosystem-card" href="https://github.com/silicon-index/silicon-index-market-database.github.io" target="_blank" rel="noopener noreferrer">
-              <span class="ecosystem-card-name">Market Database</span>
+            <a class="ecosystem-card" id="ecosystem-card-market-db" href="https://github.com/silicon-index/silicon-index-market-database.github.io/tree/dev" target="_blank" rel="noopener noreferrer">
+              <span class="ecosystem-card-name">Market Database <span class="ecosystem-card-badge ecosystem-card-badge--dev">dev branch</span></span>
               <span class="ecosystem-card-desc">MongoDB schemas, validation definitions, and point-in-time recovery tooling.</span>
               <span class="ecosystem-card-repo">silicon-index-market-database.github.io</span>
             </a>
@@ -157,36 +221,54 @@
               <span class="ecosystem-card-desc">Mathematical models for price anomaly detection and fair-value scoring.</span>
               <span class="ecosystem-card-repo">silicon-index-ai.github.io</span>
             </a>
-            <a class="ecosystem-card" href="https://silicon-index.github.io/silicon-index-security.github.io" target="_blank" rel="noopener noreferrer">
-              <span class="ecosystem-card-name">Security Hub</span>
+            <a class="ecosystem-card" href="https://github.com/silicon-index/silicon-index-security.github.io/tree/dev" target="_blank" rel="noopener noreferrer">
+              <span class="ecosystem-card-name">Security Hub <span class="ecosystem-card-badge ecosystem-card-badge--dev">dev branch</span></span>
               <span class="ecosystem-card-desc">Security governance, incident advisories, and disclosure policies.</span>
               <span class="ecosystem-card-repo">silicon-index-security.github.io</span>
             </a>
-            <a class="ecosystem-card" href="https://silicon-index.github.io/silicon-index-admin-dashboard.github.io" target="_blank" rel="noopener noreferrer">
-              <span class="ecosystem-card-name">Admin Dashboard</span>
+            <a class="ecosystem-card" href="https://github.com/silicon-index/silicon-index-admin-dashboard.github.io/tree/dev" target="_blank" rel="noopener noreferrer">
+              <span class="ecosystem-card-name">Admin Dashboard <span class="ecosystem-card-badge ecosystem-card-badge--dev">dev branch</span></span>
               <span class="ecosystem-card-desc">Internal interface for price validation and moderation controls.</span>
               <span class="ecosystem-card-repo">silicon-index-admin-dashboard.github.io</span>
             </a>
-            <a class="ecosystem-card" href="https://silicon-index.github.io/silicon-index-contributors.github.io" target="_blank" rel="noopener noreferrer">
-              <span class="ecosystem-card-name">Contributors</span>
+            <a class="ecosystem-card" id="ecosystem-card-contributors" href="https://github.com/silicon-index/silicon-index-contributors.github.io/tree/dev" target="_blank" rel="noopener noreferrer">
+              <span class="ecosystem-card-name">Contributors <span class="ecosystem-card-badge ecosystem-card-badge--dev">dev branch</span></span>
               <span class="ecosystem-card-desc">Guidelines, community badges, and maintainer onboarding.</span>
               <span class="ecosystem-card-repo">silicon-index-contributors.github.io</span>
             </a>
-            <a class="ecosystem-card" href="https://github.com/silicon-index/silicon-index-donations-api.github.io" target="_blank" rel="noopener noreferrer">
-              <span class="ecosystem-card-name">Donations API</span>
+            <a class="ecosystem-card" id="ecosystem-card-donations" href="https://github.com/silicon-index/silicon-index-donations-api.github.io/tree/dev" target="_blank" rel="noopener noreferrer">
+              <span class="ecosystem-card-name">Donations API <span class="ecosystem-card-badge ecosystem-card-badge--dev">dev branch</span></span>
               <span class="ecosystem-card-desc">Financial ledger and donation processing integration.</span>
               <span class="ecosystem-card-repo">silicon-index-donations-api.github.io</span>
             </a>
-            <a class="ecosystem-card" href="https://silicon-index.github.io/silicon-index-museum.github.io" target="_blank" rel="noopener noreferrer">
-              <span class="ecosystem-card-name">Tech Museum</span>
+            <a class="ecosystem-card" href="https://github.com/silicon-index/silicon-index-museum.github.io/tree/dev" target="_blank" rel="noopener noreferrer">
+              <span class="ecosystem-card-name">Tech Museum <span class="ecosystem-card-badge ecosystem-card-badge--dev">dev branch</span></span>
               <span class="ecosystem-card-desc">Retrospective archive of legacy architectures and historic MSRP benchmarks.</span>
               <span class="ecosystem-card-repo">silicon-index-museum.github.io</span>
             </a>
-            <a class="ecosystem-card" href="https://silicon-index.github.io/silicon-index-blog.github.io" target="_blank" rel="noopener noreferrer">
-              <span class="ecosystem-card-name">Community Blog</span>
+            <a class="ecosystem-card" href="https://github.com/silicon-index/silicon-index-blog.github.io/tree/dev" target="_blank" rel="noopener noreferrer">
+              <span class="ecosystem-card-name">Community Blog <span class="ecosystem-card-badge ecosystem-card-badge--dev">dev branch</span></span>
               <span class="ecosystem-card-desc">Market trend reports, teardowns, and algorithm release notes.</span>
               <span class="ecosystem-card-repo">silicon-index-blog.github.io</span>
             </a>
+          </div>
+        </section>
+
+        <section class="table-panel community-panel" id="support-panel" aria-labelledby="support-heading">
+          <div class="table-panel-header">
+            <h2 id="support-heading">Support Silicon Index</h2>
+            <span class="meta-chip">community-funded</span>
+          </div>
+          <p class="ecosystem-intro">
+            Silicon Index has no ads and sells no data — hosting and scraping infrastructure are funded by
+            donations, routed through the (not-yet-deployed)
+            <a href="https://github.com/silicon-index/silicon-index-donations-api.github.io/tree/dev" target="_blank" rel="noopener noreferrer">silicon-index-donations-api</a>
+            once it's live. Payment links below are configured by admins in the
+            <a href="admin.html">Admin Panel</a> — this site never collects card details itself, it only links out
+            to the processor an admin chooses.
+          </p>
+          <div id="support-links" class="support-links">
+            <p id="support-empty" class="empty-state" hidden>No payment links are configured yet.</p>
           </div>
         </section>
 
@@ -204,6 +286,10 @@
     </footer>
   </div>
 
+  <script src="auth.js"></script>
+  <script src="contributions.js"></script>
+  <script src="settings.js"></script>
+  <script src="nav.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -27,8 +27,112 @@
     els.sort = document.getElementById("sort-select");
     els.reset = document.getElementById("filter-reset");
 
+    els.communityBody = document.getElementById("community-table-body");
+    els.contributorsBody = document.getElementById("contributors-table-body");
+
     bindEvents();
     loadData();
+    renderCommunity();
+    renderContributors();
+    applyDataSourceLinks();
+  }
+
+  function applyDataSourceLinks() {
+    if (!window.SiSettings) return;
+    var settings = window.SiSettings.get();
+    var marketDbCard = document.getElementById("ecosystem-card-market-db");
+    var contributorsCard = document.getElementById("ecosystem-card-contributors");
+    var contributorsGuidelinesLink = document.getElementById("contributor-guidelines-link");
+    var donationsCard = document.getElementById("ecosystem-card-donations");
+
+    if (marketDbCard) marketDbCard.href = settings.marketDbUrl;
+    if (contributorsCard) contributorsCard.href = settings.contributorsUrl;
+    if (contributorsGuidelinesLink) contributorsGuidelinesLink.href = settings.contributorsUrl;
+    if (donationsCard) donationsCard.href = settings.donationsApiUrl;
+
+    renderSupportLinks(settings);
+  }
+
+  function renderSupportLinks(settings) {
+    var container = document.getElementById("support-links");
+    var emptyEl = document.getElementById("support-empty");
+    if (!container || !emptyEl) return;
+
+    var options = [
+      { key: "githubSponsorsUrl", label: "GitHub Sponsors", url: settings.githubSponsorsUrl, cls: "support-btn--sponsors" },
+      { key: "paypalUrl", label: "PayPal", url: settings.paypalUrl, cls: "support-btn--paypal" },
+      { key: "customDonationUrl", label: settings.customDonationLabel || "Donate", url: settings.customDonationUrl, cls: "support-btn--custom" }
+    ].filter(function (o) { return o.url; });
+
+    Array.prototype.forEach.call(container.querySelectorAll(".support-btn"), function (el) { el.remove(); });
+
+    if (options.length === 0) {
+      emptyEl.hidden = false;
+      return;
+    }
+    emptyEl.hidden = true;
+
+    options.forEach(function (o) {
+      var a = document.createElement("a");
+      a.className = "support-btn " + o.cls;
+      a.href = o.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = o.label;
+      container.appendChild(a);
+    });
+  }
+
+  function renderContributors() {
+    if (!els.contributorsBody || !window.SiContributions) return;
+    var contributors = window.SiContributions.getContributorsIndex();
+
+    if (contributors.length === 0) {
+      els.contributorsBody.innerHTML = '<tr class="table-loading-row"><td colspan="4">No contributors yet — none have passed check-up.</td></tr>';
+      return;
+    }
+
+    els.contributorsBody.innerHTML = contributors.map(renderContributorRow).join("");
+  }
+
+  function renderContributorRow(c) {
+    var badgeClass = c.isAnonymous ? "badge-pending" : "badge-fair";
+    return (
+      "<tr>" +
+      '<td><span class="component-name">' + escapeHtml(c.contributor) + "</span></td>" +
+      '<td><span class="badge ' + badgeClass + '"><span class="badge-dot"></span>' + escapeHtml(c.trust) + "</span></td>" +
+      '<td class="num-cell">' + c.approvedCount + "</td>" +
+      "<td><span class=\"spec-year\">" + (c.lastApprovedAt ? new Date(c.lastApprovedAt).toLocaleString() : "—") + "</span></td>" +
+      "</tr>"
+    );
+  }
+
+  function renderCommunity() {
+    if (!els.communityBody || !window.SiContributions) return;
+    var items = window.SiContributions.getAll().slice().sort(function (a, b) {
+      return new Date(b.submittedAt) - new Date(a.submittedAt);
+    });
+
+    if (items.length === 0) {
+      els.communityBody.innerHTML = '<tr class="table-loading-row"><td colspan="5">No community submissions yet.</td></tr>';
+      return;
+    }
+
+    els.communityBody.innerHTML = items.map(renderCommunityRow).join("");
+  }
+
+  function renderCommunityRow(item) {
+    var trustClass = item.status === "approved" ? "badge-fair" : item.status === "rejected" ? "badge-scalper" : "badge-pending";
+    return (
+      "<tr>" +
+      '<td><span class="component-name">' + escapeHtml(item.componentName) + "</span>" +
+      '<span class="component-category">' + escapeHtml(item.category) + "</span></td>" +
+      '<td><span class="spec-meta">' + escapeHtml(item.socket) + " · " + escapeHtml(item.generation) + "</span></td>" +
+      '<td class="num-cell market-price">' + formatPrice(item.observedPrice, item.currency) + "</td>" +
+      "<td>" + escapeHtml(item.contributor) + "</td>" +
+      '<td><span class="badge ' + trustClass + '"><span class="badge-dot"></span>' + escapeHtml(item.trust) + "</span></td>" +
+      "</tr>"
+    );
   }
 
   function bindEvents() {

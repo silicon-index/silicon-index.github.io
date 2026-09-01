@@ -1,0 +1,19 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ScreenerTable from "../components/ScreenerTable.astro";
+import CommunityPanel from "../components/CommunityPanel.astro";
+import ContributorsPanel from "../components/ContributorsPanel.astro";
+import SupportPanel from "../components/SupportPanel.astro";
+import EcosystemGrid from "../components/EcosystemGrid.astro";
+import PriceChartModal from "../components/PriceChartModal.astro";
+---
+<BaseLayout title="Hardware Market Screener" activeNav="screener">
+  <ScreenerTable />
+  <div class="mt-5 space-y-5">
+    <CommunityPanel />
+    <ContributorsPanel />
+    <SupportPanel />
+    <EcosystemGrid />
+  </div>
+  <PriceChartModal />
+</BaseLayout>

@@ -1,0 +1,155 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Contribute" activeNav="contribute">
+  <div class="layout layout--form px-4">
+    <main class="content content--narrow">
+      <section class="form-panel" aria-labelledby="contribute-heading">
+        <h1 id="contribute-heading">Submit a Market Price</h1>
+        <p class="form-intro">
+          Anonymous submissions are welcome. Every entry starts as <strong>Pending Validation</strong> and is
+          reviewed in the <a href="/admin">Admin Panel</a> before it counts toward the index. Per
+          <a href="/DEV-GUIDE.md">DEV-GUIDE.md</a>'s strict whitelist rule, only normalized spec fields and a
+          numeric price are accepted — no seller names, locations, or free-text descriptions.
+        </p>
+
+        <p id="contribute-signed-in" class="form-note" hidden></p>
+
+        <form id="contribute-form" novalidate>
+          <div class="form-row">
+            <label for="f-name">Component name</label>
+            <input type="text" id="f-name" name="componentName" required maxlength="80" placeholder="e.g. AMD Ryzen 7 7800X3D" />
+          </div>
+
+          <div class="form-row form-row--split">
+            <div>
+              <label for="f-category">Category</label>
+              <select id="f-category" name="category" required>
+                <option value="">Select…</option>
+                <option>CPU</option><option>GPU</option><option>Motherboard</option>
+                <option>Memory</option><option>Storage</option><option>Power Supply</option>
+              </select>
+            </div>
+            <div>
+              <label for="f-socket">Socket</label>
+              <select id="f-socket" name="socket" required>
+                <option value="">Select…</option>
+                <option>AM5</option><option>AM4</option><option>LGA1700</option><option>LGA1851</option><option>N/A</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row form-row--split">
+            <div>
+              <label for="f-generation">Generation</label>
+              <select id="f-generation" name="generation" required>
+                <option value="">Select…</option>
+                <option>Zen 4</option><option>Zen 5</option><option>Raptor Lake Refresh</option>
+                <option>Arrow Lake</option><option>Ada Lovelace</option><option>Blackwell</option><option>Other</option>
+              </select>
+            </div>
+            <div>
+              <label for="f-year">Release year</label>
+              <input type="number" id="f-year" name="releaseYear" required min="2000" max="2030" step="1" placeholder="2023" />
+            </div>
+          </div>
+
+          <div class="form-row form-row--split">
+            <div>
+              <label for="f-price">Observed price (numeric only)</label>
+              <input type="number" id="f-price" name="observedPrice" required min="0" step="0.01" placeholder="449.00" />
+            </div>
+            <div>
+              <label for="f-currency">Currency</label>
+              <select id="f-currency" name="currency" required>
+                <option value="USD">USD</option><option value="EUR">EUR</option><option value="RON">RON</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label for="f-tdp">TDP (watts, numeric only)</label>
+            <input type="number" id="f-tdp" name="tdpWatts" min="0" step="1" placeholder="120" />
+          </div>
+
+          <div class="form-row">
+            <label for="f-proof">Proof of value URL (required)</label>
+            <input type="url" id="f-proof" name="proofUrl" required placeholder="https://example.com/receipt-or-listing" />
+            <p class="field-hint">A link to the completed transaction or listing. No seller PII — the URL is reviewed and stripped of tracking parameters by moderators.</p>
+          </div>
+
+          <p id="form-error" class="form-error" hidden></p>
+          <p id="form-success" class="form-success" hidden></p>
+
+          <button type="submit" class="btn-primary">Submit for review</button>
+        </form>
+      </section>
+    </main>
+  </div>
+</BaseLayout>
+
+<script>
+  import { getSession } from "@/lib/auth";
+  import { stageSubmission, normalizeSku } from "@/services/dataService";
+  import { getOrCreateAnonymousId } from "@/lib/identity";
+
+  const session = getSession();
+  const noteEl = document.getElementById("contribute-signed-in") as HTMLParagraphElement;
+  noteEl.hidden = false;
+  if (session) {
+    noteEl.textContent = `Submitting as ${session.username} (Trusted Contributor once approved). You can also submit anonymously by signing out.`;
+  } else {
+    const anonId = getOrCreateAnonymousId();
+    noteEl.textContent = `Submitting anonymously as ${anonId} — a random ID kept only in this browser, not a real identity. Sign in to submit as a named contributor instead.`;
+  }
+
+  const form = document.getElementById("contribute-form") as HTMLFormElement;
+  const errorEl = document.getElementById("form-error") as HTMLParagraphElement;
+  const successEl = document.getElementById("form-success") as HTMLParagraphElement;
+
+  function showError(msg: string): void {
+    errorEl.hidden = false;
+    errorEl.textContent = msg;
+  }
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    errorEl.hidden = true;
+    successEl.hidden = true;
+
+    const data = new FormData(form);
+    const price = parseFloat(String(data.get("observedPrice")));
+    const year = parseInt(String(data.get("releaseYear")), 10);
+    const proofUrl = String(data.get("proofUrl") || "").trim();
+
+    if (isNaN(price) || price < 0) return showError("Observed price must be a valid non-negative number.");
+    if (!proofUrl) return showError("Proof of value URL is required.");
+    try {
+      new URL(proofUrl);
+    } catch {
+      return showError("Proof of value must be a valid URL.");
+    }
+
+    const componentName = String(data.get("componentName"));
+    const category = String(data.get("category"));
+
+    stageSubmission({
+      sku: normalizeSku(componentName, category),
+      componentName,
+      category,
+      socket: String(data.get("socket")),
+      generation: String(data.get("generation")),
+      releaseYear: year,
+      reportedPrice: price,
+      currency: String(data.get("currency")),
+      tdpWatts: data.get("tdpWatts") ? parseInt(String(data.get("tdpWatts")), 10) : null,
+      proofUrl,
+      contributorId: session ? session.username : getOrCreateAnonymousId(),
+      contributorTier: session ? "trusted" : "anonymous"
+    });
+
+    form.reset();
+    successEl.hidden = false;
+    successEl.textContent = "Submitted. Your entry is Pending Validation and will appear on the screener once approved.";
+  });
+</script>

@@ -1,0 +1,65 @@
+---
+---
+<section class="table-panel community-panel mx-4" id="contributors-panel" aria-labelledby="contributors-heading">
+  <div class="table-panel-header">
+    <h2 id="contributors-heading">Contributors</h2>
+    <a class="btn-link" id="contributor-guidelines-link" href="https://github.com/silicon-index/silicon-index-contributors.github.io/tree/dev" target="_blank" rel="noopener noreferrer">Contributor guidelines (dev branch) ↗</a>
+  </div>
+  <p class="ecosystem-intro">
+    This index lists contributors whose submissions passed admin check-up in the
+    <a href="/admin">Admin Panel</a> — pending and rejected entries never appear here. Each record is either an
+    anonymous approved contribution or a signed-in Trusted Contributor; no personal identifiers are ever shown.
+    Shape mirrors <code>/contributors-index.json</code>, the interim schema for the (not-yet-deployed)
+    <a href="https://github.com/silicon-index/silicon-index-contributors.github.io/tree/dev" target="_blank" rel="noopener noreferrer">silicon-index-contributors</a> site.
+  </p>
+  <div class="table-container">
+    <table class="screener-table">
+      <thead>
+        <tr>
+          <th scope="col">Contributor</th>
+          <th scope="col">Tier</th>
+          <th scope="col" class="col-num">Trust Score</th>
+          <th scope="col" class="col-num">Verified Submissions</th>
+          <th scope="col">Last Approved</th>
+        </tr>
+      </thead>
+      <tbody id="contributors-table-body">
+        <tr class="table-loading-row"><td colspan="5">No contributors yet — none have passed check-up.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+  import { fetchContributors, type ContributorProfile } from "@/services/dataService";
+  import { get as getSettings } from "@/lib/settings";
+  import { escapeHtml } from "@/lib/format";
+
+  const link = document.getElementById("contributor-guidelines-link") as HTMLAnchorElement | null;
+  if (link) link.href = getSettings().contributorsUrl;
+
+  function renderRow(c: ContributorProfile): string {
+    const trusted = c.tier === "trusted";
+    const badgeClass = trusted ? "badge-fair" : "badge-pending";
+    const label = trusted ? "Trusted Contributor" : "Anonymous Contribution";
+    return (
+      "<tr>" +
+      `<td><span class="component-name">${escapeHtml(c.contributorId)}</span></td>` +
+      `<td><span class="badge ${badgeClass}"><span class="badge-dot"></span>${label}</span></td>` +
+      `<td class="num-cell">${c.trustScore}</td>` +
+      `<td class="num-cell">${c.verifiedSubmissions}</td>` +
+      `<td><span class="spec-year">${c.lastApprovedAt ? new Date(c.lastApprovedAt).toLocaleString() : "—"}</span></td>` +
+      "</tr>"
+    );
+  }
+
+  const body = document.getElementById("contributors-table-body");
+  if (body) {
+    const { data } = await fetchContributors();
+    // Only contributors with an approved submission belong in the public index.
+    const visible = data.filter((c) => c.verifiedSubmissions > 0);
+    body.innerHTML = visible.length
+      ? visible.map(renderRow).join("")
+      : '<tr class="table-loading-row"><td colspan="5">No contributors yet — none have passed check-up.</td></tr>';
+  }
+</script>

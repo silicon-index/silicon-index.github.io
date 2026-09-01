@@ -1,0 +1,72 @@
+---
+---
+<section class="table-panel community-panel mx-4" aria-labelledby="community-heading">
+  <div class="table-panel-header">
+    <h2 id="community-heading">Community Submissions</h2>
+    <a class="btn-link" href="/contribute">+ Submit a price</a>
+  </div>
+  <p class="ecosystem-intro">
+    Anyone can submit an observed market price anonymously or while signed in. Entries start as
+    <strong>Pending Validation</strong> and only appear in the main screener once an admin marks them
+    <strong>Trusted Contributor</strong> in the <a href="/admin">Admin Panel</a>.
+  </p>
+  <div class="table-container">
+    <table class="screener-table">
+      <thead>
+        <tr>
+          <th scope="col">Component</th>
+          <th scope="col">Socket / Gen</th>
+          <th scope="col" class="col-num">Observed Price</th>
+          <th scope="col">Contributor</th>
+          <th scope="col">Trust</th>
+        </tr>
+      </thead>
+      <tbody id="community-table-body">
+        <tr class="table-loading-row"><td colspan="5">No community submissions yet.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+  import { readStaged, type PriceSubmission } from "@/services/dataService";
+  import { formatPrice, escapeHtml } from "@/lib/format";
+
+  const STATUS_LABEL: Record<PriceSubmission["status"], string> = {
+    pending: "Pending Validation",
+    approved: "Approved",
+    denied: "Denied",
+    flagged: "Flagged for Review"
+  };
+
+  const STATUS_BADGE: Record<PriceSubmission["status"], string> = {
+    pending: "badge-pending",
+    approved: "badge-fair",
+    denied: "badge-scalper",
+    flagged: "badge-scalper"
+  };
+
+  function renderRow(item: PriceSubmission): string {
+    const tierLabel = item.contributorTier === "trusted" ? "Trusted Contributor" : "Anonymous";
+    const label = item.status === "approved" ? tierLabel : STATUS_LABEL[item.status];
+    const auto = item.autoAccepted ? '<span class="component-category">auto</span>' : "";
+    return (
+      "<tr>" +
+      `<td><span class="component-name">${escapeHtml(item.componentName)}</span>` +
+      `<span class="component-category">${escapeHtml(item.category)}</span></td>` +
+      `<td><span class="spec-meta">${escapeHtml(item.socket)} · ${escapeHtml(item.generation)}</span></td>` +
+      `<td class="num-cell market-price">${formatPrice(item.reportedPrice, item.currency)}</td>` +
+      `<td>${escapeHtml(item.contributorId)}</td>` +
+      `<td><span class="badge ${STATUS_BADGE[item.status]}"><span class="badge-dot"></span>${escapeHtml(label)}</span>${auto}</td>` +
+      "</tr>"
+    );
+  }
+
+  const body = document.getElementById("community-table-body");
+  if (body) {
+    const items = readStaged().slice().sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+    body.innerHTML = items.length
+      ? items.map(renderRow).join("")
+      : '<tr class="table-loading-row"><td colspan="5">No community submissions yet.</td></tr>';
+  }
+</script>

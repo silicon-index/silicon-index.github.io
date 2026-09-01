@@ -1,0 +1,12 @@
+{
+  "_readme": "Schema for the Contributors Index. The silicon-index-contributors.github.io repo (dev branch) has no Pages deployment or record templates yet, so this file defines the interim shape produced by this portal's admin check-up flow (see admin.html + contributions.js#getContributorsIndex). A record is added here only after an admin approves a submission in the Admin Panel — pending/rejected submissions never appear. Swap this static seed for a live feed from silicon-index-backend-api once Phase 5 lands.",
+  "schemaVersion": 1,
+  "fields": {
+    "contributor": "Display name, or \"Anonymous\" for unauthenticated submissions. Never a real name/email/PII.",
+    "isAnonymous": "true if the submission was made without a signed-in account.",
+    "trust": "\"Trusted Contributor\" for signed-in approved contributors, \"Anonymous Contribution\" for anonymous approved ones.",
+    "approvedCount": "Number of approved submissions attributed to this contributor.",
+    "lastApprovedAt": "ISO 8601 timestamp of the most recent admin approval."
+  },
+  "contributors": []
+}

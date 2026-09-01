@@ -4,6 +4,8 @@
 
 Silicon Index is a decentralized, transparent analytics ecosystem designed to track real-time hardware pricing across global retail and secondary markets. By combining automated aggregation, strict data sanitization, and deterministic fair-value algorithms, Silicon Index identifies artificial inflation, scalper margins, and market depreciation trends.
 
+**Main Portal stack:** Astro + TypeScript (static output), Tailwind CSS, `uPlot` for price-history charting, deployed via GitHub Actions (`.github/workflows/deploy.yml`) to GitHub Pages.
+
 ---
 
 ## 🏛️ Ecosystem Repositories
@@ -14,15 +16,41 @@ The platform is architected across 11 modular repositories under the [`silicon-i
 | :--- | :--- | :--- | :--- |
 | **Main Portal** | [`silicon-index.github.io`](https://github.com/silicon-index/silicon-index.github.io) | [🌐 Web UI](https://silicon-index.github.io) | Primary market screener, component search, and live index tables. |
 | **Backend API** | [`silicon-index-backend-api`](https://github.com/silicon-index/silicon-index-backend-api) | `api.silicon-index.internal` | REST/Serverless microservices, telemetry endpoints, and data delivery. |
-| **Market Database** | [`silicon-index-market-database.github.io`](https://github.com/silicon-index/silicon-index-market-database.github.io) | `DB Migration Layer` | MongoDB schemas, validation definitions, and point-in-time recovery tooling. |
+| **Market Database** | [`silicon-index-market-database.github.io`](https://github.com/silicon-index/silicon-index-market-database.github.io) | [🌿 `dev` branch](https://github.com/silicon-index/silicon-index-market-database.github.io/tree/dev) (Pages not yet deployed) | MongoDB schemas, validation definitions, and point-in-time recovery tooling. |
 | **Market Scrapers** | [`silicon-index-market-scrapers.github.io`](https://github.com/silicon-index/silicon-index-market-scrapers.github.io) | `Automated Workers` | Multi-source price aggregation bots with integrated whitelist sanitization. |
 | **AI Models** | [`silicon-index-ai.github.io`](https://github.com/silicon-index/silicon-index-ai.github.io) | `Valuation Engine` | Mathematical models for price anomaly detection and fair-value scoring. |
-| **Security Hub** | [`silicon-index-security.github.io`](https://github.com/silicon-index/silicon-index-security.github.io) | [🌐 Security Portal](https://silicon-index.github.io/silicon-index-security.github.io) | Security governance, incident advisories, and disclosure policies. |
-| **Admin Dashboard** | [`silicon-index-admin-dashboard.github.io`](https://github.com/silicon-index/silicon-index-admin-dashboard.github.io) | [🌐 Admin Console](https://silicon-index.github.io/silicon-index-admin-dashboard.github.io) | Internal interface for price validation and moderation controls. |
-| **Contributors** | [`silicon-index-contributors.github.io`](https://github.com/silicon-index/silicon-index-contributors.github.io) | [🌐 Contributor Hub](https://silicon-index.github.io/silicon-index-contributors.github.io) | Guidelines, community badges, and maintainer onboarding. |
-| **Donations API** | [`silicon-index-donations-api.github.io`](https://github.com/silicon-index/silicon-index-donations-api.github.io) | `Gateway Layer` | Financial ledger and donation processing integration. |
-| **Tech Museum** | [`silicon-index-museum.github.io`](https://github.com/silicon-index/silicon-index-museum.github.io) | [🌐 Museum Archive](https://silicon-index.github.io/silicon-index-museum.github.io) | Retrospective archive of legacy architectures and historic MSRP benchmarks. |
-| **Community Blog** | [`silicon-index-blog.github.io`](https://github.com/silicon-index/silicon-index-blog.github.io) | [🌐 Blog & Logs](https://silicon-index.github.io/silicon-index-blog.github.io) | Market trend reports, teardowns, and algorithm release notes. |
+| **Security Hub** | [`silicon-index-security.github.io`](https://github.com/silicon-index/silicon-index-security.github.io) | [🌿 `dev` branch](https://github.com/silicon-index/silicon-index-security.github.io/tree/dev) (Pages not yet deployed) | Security governance, incident advisories, and disclosure policies. |
+| **Admin Dashboard** | [`silicon-index-admin-dashboard.github.io`](https://github.com/silicon-index/silicon-index-admin-dashboard.github.io) | [🌿 `dev` branch](https://github.com/silicon-index/silicon-index-admin-dashboard.github.io/tree/dev) (Pages not yet deployed) | Internal interface for price validation and moderation controls. |
+| **Contributors** | [`silicon-index-contributors.github.io`](https://github.com/silicon-index/silicon-index-contributors.github.io) | [🌿 `dev` branch](https://github.com/silicon-index/silicon-index-contributors.github.io/tree/dev) (Pages not yet deployed) | Guidelines, community badges, and maintainer onboarding. |
+| **Donations API** | [`silicon-index-donations-api.github.io`](https://github.com/silicon-index/silicon-index-donations-api.github.io) | [🌿 `dev` branch](https://github.com/silicon-index/silicon-index-donations-api.github.io/tree/dev) (Pages not yet deployed) | Financial ledger and donation processing integration. |
+| **Tech Museum** | [`silicon-index-museum.github.io`](https://github.com/silicon-index/silicon-index-museum.github.io) | [🌿 `dev` branch](https://github.com/silicon-index/silicon-index-museum.github.io/tree/dev) (Pages not yet deployed) | Retrospective archive of legacy architectures and historic MSRP benchmarks. |
+| **Community Blog** | [`silicon-index-blog.github.io`](https://github.com/silicon-index/silicon-index-blog.github.io) | [🌿 `dev` branch](https://github.com/silicon-index/silicon-index-blog.github.io/tree/dev) (Pages not yet deployed) | Market trend reports, teardowns, and algorithm release notes. |
+
+---
+
+## 🚀 Try the Live Demo
+
+The Main Portal is an **Astro + TypeScript** static site (Tailwind CSS, `uPlot` charting) with a client-side demo of the community/moderation flow ahead of the real backend:
+
+* **[Screener](https://silicon-index.github.io)** — the market table, a live "Community Submissions" feed, and a per-component price-history chart (click any row).
+* **[Contribute](https://silicon-index.github.io/contribute/)** — submit an observed price anonymously or signed in.
+* **[Sign In / Register](https://silicon-index.github.io/login/)** — demo accounts (seeded admin: `admin` / `admin123`).
+* **[Admin Panel](https://silicon-index.github.io/admin/)** — approve/reject pending submissions, edit the Market Database / Contributors / Donations API data-source links, and set GitHub Sponsors / PayPal / custom donation links (admin role required).
+
+The Screener also links out to a **Support Silicon Index** panel with whichever donation links an admin has configured — this site never collects payment details itself.
+
+Accounts, sessions, submissions, and settings are stored in the browser's `localStorage` — there is no server yet, so none of it syncs across devices or persists once the backend (`silicon-index-backend-api`) is live. `src/lib/dataService.ts` attempts a live fetch from the market-database/contributors repos first and falls back to bundled mock data automatically; see [dev-index.md](./dev-index.md) Phase 5 and Phase 10 for the migration plan.
+
+### Local development
+
+```bash
+npm install
+npm run dev      # http://localhost:4321
+npm run build    # outputs to dist/
+npm run preview  # serve the production build locally
+```
+
+The prior hand-written HTML/CSS/JS implementation is kept for reference under [`legacy-static/`](./legacy-static) but is no longer built or deployed.
 
 ---
 
@@ -38,7 +66,7 @@ The platform is architected across 11 modular repositories under the [`silicon-i
 
 * 📖 **[Developer Guide (`DEV-GUIDE.md`)](./DEV-GUIDE.md)**: Coding standards, schema validation, and PR workflows.
 * 📜 **[Terms & Rules (`TERMS-AND-RULES.md`)](./TERMS-AND-RULES.md)**: Community rules, data policies, and amendment processes.
-* 🛡️ **[Security Advisories](https://github.com/silicon-index/silicon-index-security.github.io)**: Responsible vulnerability disclosure procedures.
+* 🛡️ **[Security Advisories](https://github.com/silicon-index/silicon-index-security.github.io/tree/dev)**: Responsible vulnerability disclosure procedures.
 
 ---
 

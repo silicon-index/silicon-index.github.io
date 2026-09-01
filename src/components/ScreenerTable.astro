@@ -1,0 +1,244 @@
+---
+---
+<div class="flex items-center justify-end gap-2 px-4 pt-3">
+  <span id="row-count" class="meta-chip">0 components</span>
+  <span id="data-source-badge" class="meta-chip meta-chip--live">● loading…</span>
+</div>
+<div class="flex items-start flex-1">
+  <aside class="w-60 shrink-0 p-4 border-r border-border bg-bg-raised" aria-label="Filters">
+    <h2 class="sidebar-title">Filters</h2>
+
+    <div class="filter-group">
+      <label for="filter-search">Search</label>
+      <input type="search" id="filter-search" placeholder="Component name…" autocomplete="off" />
+    </div>
+
+    <div class="filter-group">
+      <label for="filter-category">Category</label>
+      <select id="filter-category"><option value="">All categories</option></select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filter-socket">Socket</label>
+      <select id="filter-socket"><option value="">All sockets</option></select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filter-year">Release Year</label>
+      <select id="filter-year"><option value="">All years</option></select>
+    </div>
+
+    <div class="filter-group">
+      <label class="checkbox-label">
+        <input type="checkbox" id="filter-scalped" />
+        <span>Scalper Alert only</span>
+      </label>
+    </div>
+
+    <button id="filter-reset" class="btn-reset" type="button">Reset filters</button>
+
+    <div class="sidebar-note">
+      <p><strong>Fair Value Score</strong> is a deterministic index computed from MSRP decay, availability, and verified transaction data.</p>
+    </div>
+  </aside>
+
+  <main class="content flex-1 min-w-0 p-4">
+    <section class="table-panel" aria-labelledby="screener-heading">
+      <div class="table-panel-header">
+        <h1 id="screener-heading">Market Screener</h1>
+        <div class="sort-controls">
+          <label for="sort-select">Sort by</label>
+          <select id="sort-select">
+            <option value="name-asc">Name (A–Z)</option>
+            <option value="price-asc">Market Price (Low → High)</option>
+            <option value="price-desc" selected>Market Price (High → Low)</option>
+            <option value="fv-desc">Fair Value Score (High → Low)</option>
+            <option value="delta-desc">Scalper Margin (High → Low)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-container" id="table-container">
+        <table class="screener-table">
+          <thead>
+            <tr>
+              <th scope="col">Component</th>
+              <th scope="col">Socket / Gen</th>
+              <th scope="col" class="col-num">Fair Value Score</th>
+              <th scope="col" class="col-num">Market Price</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <tr class="table-loading-row"><td colspan="5">Loading market data…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p id="empty-state" class="empty-state" hidden>No components match the current filters.</p>
+      <p class="text-[11px] text-text-faint mt-2">Click a row to open its 12-month price chart.</p>
+    </section>
+  </main>
+</div>
+
+<script>
+  import { fetchMarketData, type HardwareComponent } from "@/services/dataService";
+  import { formatPrice, escapeHtml } from "@/lib/format";
+  import { openChartModal } from "@/lib/chartModal";
+
+  interface State {
+    all: HardwareComponent[];
+    search: string;
+    category: string;
+    socket: string;
+    year: string;
+    scalpedOnly: boolean;
+    sort: string;
+  }
+
+  const state: State = { all: [], search: "", category: "", socket: "", year: "", scalpedOnly: false, sort: "price-desc" };
+
+  const els = {
+    tableBody: document.getElementById("table-body") as HTMLTableSectionElement,
+    rowCount: document.getElementById("row-count"),
+    emptyState: document.getElementById("empty-state") as HTMLParagraphElement,
+    search: document.getElementById("filter-search") as HTMLInputElement,
+    category: document.getElementById("filter-category") as HTMLSelectElement,
+    socket: document.getElementById("filter-socket") as HTMLSelectElement,
+    year: document.getElementById("filter-year") as HTMLSelectElement,
+    scalped: document.getElementById("filter-scalped") as HTMLInputElement,
+    sort: document.getElementById("sort-select") as HTMLSelectElement,
+    reset: document.getElementById("filter-reset") as HTMLButtonElement,
+    sourceBadge: document.getElementById("data-source-badge")
+  };
+
+  function isScalped(item: HardwareComponent): boolean {
+    return item.medianMarketPrice > item.fairValueScore;
+  }
+
+  function uniqueSorted<T extends string | number>(arr: T[]): T[] {
+    return Array.from(new Set(arr.filter((v) => v !== null && v !== undefined))).sort();
+  }
+
+  function populateFilterOptions(data: HardwareComponent[]): void {
+    fillSelect(els.category, uniqueSorted(data.map((d) => d.category)));
+    fillSelect(els.socket, uniqueSorted(data.map((d) => d.socket)));
+    fillSelect(
+      els.year,
+      uniqueSorted(data.map((d) => d.releaseYear)).sort((a, b) => Number(b) - Number(a))
+    );
+  }
+
+  function fillSelect(select: HTMLSelectElement, values: (string | number)[]): void {
+    values.forEach((v) => {
+      const opt = document.createElement("option");
+      opt.value = String(v);
+      opt.textContent = String(v);
+      select.appendChild(opt);
+    });
+  }
+
+  function getFiltered(): HardwareComponent[] {
+    return state.all.filter((item) => {
+      if (state.search && item.name.toLowerCase().indexOf(state.search) === -1) return false;
+      if (state.category && item.category !== state.category) return false;
+      if (state.socket && item.socket !== state.socket) return false;
+      if (state.year && String(item.releaseYear) !== state.year) return false;
+      if (state.scalpedOnly && !isScalped(item)) return false;
+      return true;
+    });
+  }
+
+  function getSorted(items: HardwareComponent[]): HardwareComponent[] {
+    const sorted = items.slice();
+    switch (state.sort) {
+      case "name-asc":
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "price-asc":
+        sorted.sort((a, b) => a.medianMarketPrice - b.medianMarketPrice);
+        break;
+      case "price-desc":
+        sorted.sort((a, b) => b.medianMarketPrice - a.medianMarketPrice);
+        break;
+      case "fv-desc":
+        sorted.sort((a, b) => b.fairValueScore - a.fairValueScore);
+        break;
+      case "delta-desc":
+        sorted.sort((a, b) => (b.medianMarketPrice - b.fairValueScore) - (a.medianMarketPrice - a.fairValueScore));
+        break;
+    }
+    return sorted;
+  }
+
+  function render(): void {
+    const filtered = getSorted(getFiltered());
+    if (els.rowCount) els.rowCount.textContent = filtered.length + " component" + (filtered.length === 1 ? "" : "s");
+
+    if (filtered.length === 0) {
+      els.tableBody.innerHTML = "";
+      els.emptyState.hidden = false;
+      return;
+    }
+    els.emptyState.hidden = true;
+    els.tableBody.innerHTML = filtered.map(renderRow).join("");
+
+    els.tableBody.querySelectorAll<HTMLTableRowElement>("tr[data-id]").forEach((row) => {
+      row.addEventListener("click", () => {
+        const item = state.all.find((i) => i.sku === row.getAttribute("data-id"));
+        if (item) openChartModal(item);
+      });
+    });
+  }
+
+  function renderRow(item: HardwareComponent): string {
+    const scalped = isScalped(item);
+    const priceClass = scalped ? "price-over" : "price-under";
+    const badge = scalped
+      ? '<span class="badge badge-scalper"><span class="badge-dot"></span>Scalper Alert</span>'
+      : '<span class="badge badge-fair"><span class="badge-dot"></span>Fair Priced</span>';
+
+    return (
+      `<tr data-id="${escapeHtml(item.sku)}" data-row-clickable>` +
+      `<td><span class="component-name">${escapeHtml(item.name)}</span>` +
+      `<span class="component-category">${escapeHtml(item.category)}</span></td>` +
+      `<td><span class="spec-meta">${escapeHtml(item.socket)} · ${escapeHtml(item.generation)}</span> ` +
+      `<span class="spec-year">(${item.releaseYear})</span></td>` +
+      `<td class="num-cell fair-value">${formatPrice(item.fairValueScore, item.currency)}</td>` +
+      `<td class="num-cell market-price ${priceClass}">${formatPrice(item.medianMarketPrice, item.currency)}</td>` +
+      `<td>${badge}</td>` +
+      "</tr>"
+    );
+  }
+
+  function bindEvents(): void {
+    els.search.addEventListener("input", (e) => { state.search = (e.target as HTMLInputElement).value.trim().toLowerCase(); render(); });
+    els.category.addEventListener("change", (e) => { state.category = (e.target as HTMLSelectElement).value; render(); });
+    els.socket.addEventListener("change", (e) => { state.socket = (e.target as HTMLSelectElement).value; render(); });
+    els.year.addEventListener("change", (e) => { state.year = (e.target as HTMLSelectElement).value; render(); });
+    els.scalped.addEventListener("change", (e) => { state.scalpedOnly = (e.target as HTMLInputElement).checked; render(); });
+    els.sort.addEventListener("change", (e) => { state.sort = (e.target as HTMLSelectElement).value; render(); });
+    els.reset.addEventListener("click", () => {
+      state.search = ""; state.category = ""; state.socket = ""; state.year = ""; state.scalpedOnly = false; state.sort = "price-desc";
+      els.search.value = ""; els.category.value = ""; els.socket.value = ""; els.year.value = ""; els.scalped.checked = false; els.sort.value = "price-desc";
+      render();
+    });
+  }
+
+  async function init(): Promise<void> {
+    bindEvents();
+    try {
+      const { data, origin } = await fetchMarketData();
+      state.all = data;
+      populateFilterOptions(data);
+      if (els.sourceBadge) {
+        els.sourceBadge.textContent = origin === "remote" ? "● live market-database" : "● local fallback data";
+      }
+      render();
+    } catch (err) {
+      els.tableBody.innerHTML = `<tr class="table-loading-row"><td colspan="5">Error loading data: ${escapeHtml(String((err as Error).message || err))}</td></tr>`;
+    }
+  }
+
+  init();
+</script>

@@ -1,0 +1,133 @@
+---
+import { DEV_ECOSYSTEM_NAV, resolveNavHref, isFallingBack } from "../config/navigation";
+
+interface Props {
+  variant: "header" | "footer" | "quick";
+}
+
+const { variant } = Astro.props;
+---
+
+{variant === "header" && (
+  <div class="relative" data-ecosystem-menu>
+    <button type="button" class="nav-link" id="ecosystem-menu-button" aria-expanded="false" aria-haspopup="true" aria-controls="ecosystem-menu">
+      Ecosystem ▾
+    </button>
+    <div id="ecosystem-menu" class="ecosystem-menu" hidden role="menu" aria-labelledby="ecosystem-menu-button">
+      {DEV_ECOSYSTEM_NAV.map((item) => (
+        <a
+          class="ecosystem-menu-item"
+          role="menuitem"
+          data-nav-id={item.id}
+          data-nav-fallback={isFallingBack(item) ? "true" : "false"}
+          href={resolveNavHref(item)}
+          target={item.isExternal ? "_blank" : undefined}
+          rel={item.isExternal ? "noopener noreferrer" : undefined}
+          title={isFallingBack(item) ? `${item.title} — Pages not deployed, linking to the dev branch instead` : item.title}
+        >
+          <span>{item.title}</span>
+          {item.badge && <span class="ecosystem-card-badge ecosystem-card-badge--dev">{item.badge}</span>}
+          <span class="ecosystem-card-badge ecosystem-card-badge--dev" data-nav-fallback-badge hidden={!isFallingBack(item)}>dev fallback</span>
+        </a>
+      ))}
+    </div>
+  </div>
+)}
+
+{variant === "footer" && (
+  <p class="mt-1.5">
+    <span class="text-text-faint">Ecosystem ({DEV_ECOSYSTEM_NAV.length}):</span>
+    {DEV_ECOSYSTEM_NAV.map((item, i) => (
+      <>
+        {i > 0 && <span aria-hidden="true"> · </span>}
+        <a
+          class="text-text-dim hover:text-accent hover:underline"
+          data-nav-id={item.id}
+          href={resolveNavHref(item)}
+          target={item.isExternal ? "_blank" : undefined}
+          rel={item.isExternal ? "noopener noreferrer" : undefined}
+          title={isFallingBack(item) ? `${item.title} — Pages not deployed, linking to the dev branch instead` : item.title}
+        >
+          {item.title}
+        </a>
+      </>
+    ))}
+  </p>
+)}
+
+{variant === "quick" && (
+  <div class="quick-links">
+    {DEV_ECOSYSTEM_NAV.map((item) => (
+      <a
+        class="quick-link"
+        data-nav-id={item.id}
+        data-nav-fallback={isFallingBack(item) ? "true" : "false"}
+        href={resolveNavHref(item)}
+        target={item.isExternal ? "_blank" : undefined}
+        rel={item.isExternal ? "noopener noreferrer" : undefined}
+        title={isFallingBack(item) ? `${item.title} — Pages not deployed, linking to the dev branch instead` : item.title}
+      >
+        {item.title}
+        {item.badge && <span class="ecosystem-card-badge ecosystem-card-badge--dev">{item.badge}</span>}
+        <span class="ecosystem-card-badge ecosystem-card-badge--dev" data-nav-fallback-badge hidden={!isFallingBack(item)}>dev fallback</span>
+      </a>
+    ))}
+  </div>
+)}
+
+{/*
+  Kept at the component's top level, NOT inside a `variant === "header"`
+  expression: Astro only hoists/bundles <script> tags found statically, so a
+  script nested in a conditional is silently dropped from the build. The
+  guards below make it a no-op on pages that render no header variant.
+*/}
+<script>
+  import { DEV_ECOSYSTEM_NAV, resolveNavHrefWithSettings, isFallingBackWithSettings } from "@/config/navigation";
+  import { get as getSettings } from "@/lib/settings";
+
+  // Apply any admin overrides saved in the Admin Panel. Pages are prerendered
+  // with the static defaults, so this rewrites every tagged anchor (header
+  // dropdown, footer row, quick links) once settings are readable.
+  const settings = getSettings();
+  DEV_ECOSYSTEM_NAV.forEach((item) => {
+    const href = resolveNavHrefWithSettings(item, settings);
+    const fallingBack = isFallingBackWithSettings(item, settings);
+
+    document.querySelectorAll<HTMLAnchorElement>(`a[data-nav-id="${item.id}"]`).forEach((anchor) => {
+      anchor.href = href;
+      anchor.title = fallingBack ? `${item.title} — Pages not deployed, linking to the dev branch instead` : item.title;
+      if (anchor.hasAttribute("data-nav-fallback")) {
+        anchor.setAttribute("data-nav-fallback", String(fallingBack));
+      }
+      const badge = anchor.querySelector<HTMLElement>("[data-nav-fallback-badge]");
+      if (badge) badge.hidden = !fallingBack;
+    });
+  });
+
+  const wrapper = document.querySelector("[data-ecosystem-menu]");
+  const button = document.getElementById("ecosystem-menu-button");
+  const menu = document.getElementById("ecosystem-menu");
+
+  if (wrapper && button && menu) {
+    const setOpen = (open: boolean) => {
+      menu.hidden = !open;
+      button.setAttribute("aria-expanded", String(open));
+    };
+
+    button.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setOpen(menu.hidden);
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!menu.hidden && !wrapper.contains(e.target as Node)) setOpen(false);
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !menu.hidden) {
+        setOpen(false);
+        button.focus();
+      }
+    });
+  }
+</script>

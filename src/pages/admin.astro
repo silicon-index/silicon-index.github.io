@@ -1,0 +1,526 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { DEV_ECOSYSTEM_NAV } from "../config/navigation";
+---
+<BaseLayout title="Admin Panel" activeNav="admin">
+  <main class="content px-4">
+    <div id="admin-denied" class="form-panel" hidden>
+      <h1>Access Denied</h1>
+      <p class="form-intro">You need to be signed in with an admin account to view this page.</p>
+      <p class="form-intro">Demo admin credentials: <code>admin</code> / <code>admin123</code>.</p>
+      <a class="btn-primary btn-primary--link" href="/login">Go to Sign In</a>
+    </div>
+
+    <div id="admin-content" hidden>
+      <section class="form-panel" aria-labelledby="settings-heading" style="margin-top:0;">
+        <h1 id="settings-heading" style="font-size:15px;">Data Source Settings</h1>
+        <p class="form-intro">
+          These are pointer links only — no live repo is queried from this static site. Switching them updates the
+          "Market Database" and "Contributors" links shown across the portal. Both source repos currently only
+          contain a stub <code>README.md</code> and have no GitHub Pages deployment, so linking to their
+          <code>dev</code> branch is the most useful default.
+        </p>
+        <form id="settings-form">
+          <div class="form-row">
+            <label for="s-market-db">Market Database source</label>
+            <input type="url" id="s-market-db" required />
+          </div>
+          <div class="form-row">
+            <label for="s-contributors">Contributors storage source</label>
+            <input type="url" id="s-contributors" required />
+          </div>
+          <div class="form-row">
+            <label for="s-donations-api">Donations API source</label>
+            <input type="url" id="s-donations-api" required />
+          </div>
+
+          <h3 style="font-size:12.5px; color:var(--text-dim); margin:18px 0 10px; text-transform:uppercase; letter-spacing:0.04em;">Support / Donation Links</h3>
+          <p class="field-hint" style="margin:0 0 12px;">
+            Leave a field blank to hide that button on the "Support Silicon Index" panel. This site never
+            collects payment details itself — these are plain outbound links to whichever processor you pick.
+          </p>
+          <div class="form-row">
+            <label for="s-github-sponsors">GitHub Sponsors URL</label>
+            <input type="url" id="s-github-sponsors" placeholder="https://github.com/sponsors/silicon-index" />
+          </div>
+          <div class="form-row">
+            <label for="s-paypal">PayPal / other processor URL</label>
+            <input type="url" id="s-paypal" placeholder="https://paypal.me/your-org" />
+          </div>
+          <div class="form-row form-row--split">
+            <div>
+              <label for="s-custom-label">Custom link label</label>
+              <input type="text" id="s-custom-label" maxlength="40" placeholder="Ko-fi" />
+            </div>
+            <div>
+              <label for="s-custom-url">Custom link URL</label>
+              <input type="url" id="s-custom-url" placeholder="https://ko-fi.com/your-org" />
+            </div>
+          </div>
+
+          <div class="admin-actions" style="margin-bottom:6px;">
+            <button type="submit" class="btn-approve">Save</button>
+            <button type="button" id="settings-reset" class="btn-reject">Reset to defaults</button>
+          </div>
+          <p id="settings-saved" class="form-success" hidden>Saved.</p>
+        </form>
+      </section>
+
+      <section class="form-panel" aria-labelledby="nav-heading">
+        <h2 id="nav-heading" style="font-size:15px; margin:0 0 10px;">Ecosystem Navigation</h2>
+        <p class="form-intro">
+          These are the external module routes rendered in the header dropdown, the footer link row, and the
+          homepage quick links. Defaults target each repo's <code>dev</code> branch. Leave a field blank to use
+          the built-in default.
+        </p>
+        <p class="field-hint" style="margin:0 0 14px;">
+          <strong>Graceful fallback:</strong> Security Portal and Admin Dashboard are specified as
+          <code>silicon-index.github.io/&lt;repo&gt;</code> Pages URLs, but both repos currently report
+          <code>has_pages: false</code> and hold only a stub README — those URLs 404. While "Pages site is live"
+          is unchecked, visitors are routed to the repo's <code>dev</code> branch and the link shows a
+          "dev fallback" badge. Tick the box once that Pages site is actually published.
+        </p>
+
+        <form id="nav-form">
+          {DEV_ECOSYSTEM_NAV.map((item) => (
+            <div class="nav-editor-row">
+              <label for={`nav-${item.id}`}>
+                {item.title}
+                {item.settingsKey && (
+                  <span class="field-hint" style="display:inline; margin-left:6px;">
+                    (shared with the {item.settingsKey === "marketDbUrl" ? "Market Database" : "Contributors"} data source above)
+                  </span>
+                )}
+              </label>
+              <input type="url" id={`nav-${item.id}`} data-nav-input={item.id} placeholder={item.href} />
+              {item.fallbackHref && (
+                <label class="checkbox-label" style="margin-top:6px;">
+                  <input type="checkbox" data-nav-deployed={item.id} />
+                  <span>Pages site is live (untick to fall back to <code>{item.fallbackHref.replace("https://github.com/silicon-index/", "")}</code>)</span>
+                </label>
+              )}
+            </div>
+          ))}
+
+          <div class="admin-actions" style="margin-bottom:6px;">
+            <button type="submit" class="btn-approve">Save navigation</button>
+            <button type="button" id="nav-reset" class="btn-reject">Clear overrides</button>
+          </div>
+          <p id="nav-saved" class="form-success" hidden>Saved.</p>
+        </form>
+      </section>
+
+      <section class="form-panel" aria-labelledby="anon-heading">
+        <h2 id="anon-heading" style="font-size:14px; margin:0 0 8px;">Contributor Identity</h2>
+        <p class="form-intro" style="margin:0;">
+          Signed-in submissions are attributed to the account's username and become <strong>Trusted
+          Contributor</strong> once approved. Submissions made while signed out are attributed to a random
+          per-browser pseudonymous ID (e.g. <code>anon-4f9k2p1x</code>, stored in that browser's
+          <code>localStorage</code>) and become <strong>Anonymous Contribution</strong> once approved. Real IP
+          addresses are intentionally never collected client-side — this site has no server to see them, and
+          capturing them here would break the "no PII" whitelist rule in <a href="/DEV-GUIDE.md">DEV-GUIDE.md</a>.
+          IP-based dedup/trust, if ever added, belongs server-side in <code>silicon-index-backend-api</code>
+          (see Phase 5 in <a href="/dev-index.md">dev-index.md</a>).
+        </p>
+      </section>
+
+      <section class="table-panel" aria-labelledby="queue-heading" style="margin-top:20px;">
+        <div class="table-panel-header">
+          <h2 id="queue-heading">Submission Review Queue</h2>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span id="queue-count" class="meta-chip">0 awaiting review</span>
+            <button type="button" id="run-auto-accept" class="btn-approve">Run Auto-Accept Engine</button>
+          </div>
+        </div>
+        <p class="field-hint" style="margin:0 0 10px;">
+          The engine approves a pending submission only when it comes from a <strong>Trusted Contributor</strong>
+          and the reported price sits within <strong>±15%</strong> of that SKU's historical moving median.
+          Anonymous submissions, unknown SKUs, and out-of-tolerance prices are always left for a human.
+        </p>
+        <p id="auto-accept-result" class="form-success" hidden></p>
+        <div class="table-container">
+          <table class="screener-table">
+            <thead>
+              <tr>
+                <th scope="col">Component / SKU</th>
+                <th scope="col">Contributor</th>
+                <th scope="col" class="col-num">Reported</th>
+                <th scope="col" class="col-num">Median ±%</th>
+                <th scope="col">Proof</th>
+                <th scope="col">Status</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="queue-body">
+              <tr class="table-loading-row"><td colspan="7">No submissions awaiting review.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="table-panel" aria-labelledby="schema-heading" style="margin-top:20px;">
+        <div class="table-panel-header">
+          <h2 id="schema-heading">Submission Schema Preview</h2>
+          <span class="meta-chip">contributors repo template</span>
+        </div>
+        <p class="field-hint" style="margin:0 0 10px;">
+          Standardized payload for the selected submission, matching the template
+          <code>silicon-index-contributors.github.io</code> is expected to consume. Whitelist-only per
+          DEV-GUIDE.md §2 — normalized <code>component_id</code>, numeric <code>price_amount</code>, ISO currency
+          and timestamp, and no contributor PII. Select a row's "Schema" action to preview it.
+        </p>
+        <pre id="schema-preview" class="schema-preview">// Select a submission's "Schema" action to preview its payload.</pre>
+      </section>
+
+      <section class="table-panel" aria-labelledby="reviewed-heading" style="margin-top:20px;">
+        <div class="table-panel-header">
+          <h2 id="reviewed-heading">Reviewed History</h2>
+        </div>
+        <div class="table-container">
+          <table class="screener-table">
+            <thead>
+              <tr>
+                <th scope="col">Component</th>
+                <th scope="col">Contributor</th>
+                <th scope="col">Outcome</th>
+                <th scope="col">Note / Reason</th>
+                <th scope="col">Reviewed</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="reviewed-body">
+              <tr class="table-loading-row"><td colspan="6">No reviewed submissions yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+</BaseLayout>
+
+<script>
+  import { getSession } from "@/lib/auth";
+  import {
+    approve, deny, flag, reopen, getReviewQueue, getReviewed, runAutoAcceptEngine, DENIAL_REASONS
+  } from "@/lib/moderation";
+  import {
+    fetchMarketData, evaluateAutoAccept, toContributorSchema,
+    type HardwareComponent, type PriceSubmission
+  } from "@/services/dataService";
+  import { get as getSettings, set as setSettings, reset as resetSettings } from "@/lib/settings";
+  import { getNavItem } from "@/config/navigation";
+  import { formatPrice, escapeHtml } from "@/lib/format";
+  import type { SiteSettings } from "@/lib/types";
+
+  const session = getSession();
+  const denied = document.getElementById("admin-denied") as HTMLDivElement;
+  const content = document.getElementById("admin-content") as HTMLDivElement;
+
+  if (!session || session.role !== "admin") {
+    denied.hidden = false;
+  } else {
+    content.hidden = false;
+    renderAll();
+    initSettingsForm();
+    initNavForm();
+    initAutoAcceptButton();
+    void loadComponents();
+  }
+
+  function initNavForm(): void {
+    const form = document.getElementById("nav-form") as HTMLFormElement | null;
+    const savedEl = document.getElementById("nav-saved") as HTMLParagraphElement | null;
+    if (!form || !savedEl) return;
+
+    const urlInputs = Array.from(form.querySelectorAll<HTMLInputElement>("[data-nav-input]"));
+    const deployedInputs = Array.from(form.querySelectorAll<HTMLInputElement>("[data-nav-deployed]"));
+
+    function load(): void {
+      const settings = getSettings();
+      urlInputs.forEach((input) => {
+        const id = input.getAttribute("data-nav-input") as string;
+        const item = getNavItem(id);
+        // Show the effective value so the admin edits what visitors actually get.
+        const override = settings.navOverrides[id];
+        const linked = item?.settingsKey ? settings[item.settingsKey] : "";
+        input.value = override || linked || "";
+      });
+      deployedInputs.forEach((input) => {
+        const id = input.getAttribute("data-nav-deployed") as string;
+        const item = getNavItem(id);
+        input.checked = settings.navPagesDeployed[id] ?? item?.pagesDeployed ?? true;
+      });
+    }
+    load();
+
+    function flash(message: string): void {
+      savedEl!.hidden = false;
+      savedEl!.textContent = message;
+      setTimeout(() => { savedEl!.hidden = true; }, 2500);
+    }
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const navOverrides: Record<string, string> = {};
+      const linkedUpdates: Partial<SiteSettings> = {};
+
+      urlInputs.forEach((input) => {
+        const id = input.getAttribute("data-nav-input") as string;
+        const value = input.value.trim();
+        if (!value) return;
+        const item = getNavItem(id);
+        // Keep the shared data-source fields authoritative for their entries so
+        // the ecosystem cards and nav links can never disagree.
+        if (item?.settingsKey) {
+          linkedUpdates[item.settingsKey] = value;
+        } else {
+          navOverrides[id] = value;
+        }
+      });
+
+      const navPagesDeployed: Record<string, boolean> = {};
+      deployedInputs.forEach((input) => {
+        navPagesDeployed[input.getAttribute("data-nav-deployed") as string] = input.checked;
+      });
+
+      setSettings({ ...linkedUpdates, navOverrides, navPagesDeployed });
+      // Reflect any change to the shared fields in the data-source form above.
+      initSettingsForm();
+      flash("Saved. Header, footer, and quick links now use these routes.");
+    });
+
+    document.getElementById("nav-reset")?.addEventListener("click", () => {
+      setSettings({ navOverrides: {}, navPagesDeployed: {} });
+      load();
+      flash("Overrides cleared — using built-in defaults.");
+    });
+  }
+
+  let components: HardwareComponent[] = [];
+  let schemaFor: string | null = null;
+
+  async function loadComponents(): Promise<void> {
+    try {
+      const { data } = await fetchMarketData();
+      components = data;
+    } catch {
+      components = [];
+    }
+    renderAll();
+  }
+
+  const STATUS_BADGE: Record<PriceSubmission["status"], string> = {
+    pending: "badge-pending",
+    approved: "badge-fair",
+    denied: "badge-scalper",
+    flagged: "badge-scalper"
+  };
+
+  const STATUS_LABEL: Record<PriceSubmission["status"], string> = {
+    pending: "Pending",
+    approved: "Approved",
+    denied: "Denied",
+    flagged: "Flagged"
+  };
+
+  function renderAll(): void {
+    const queue = getReviewQueue();
+    const reviewed = getReviewed();
+
+    const queueCount = document.getElementById("queue-count");
+    if (queueCount) queueCount.textContent = queue.length + " awaiting review";
+
+    const queueBody = document.getElementById("queue-body");
+    if (queueBody) {
+      queueBody.innerHTML = queue.length
+        ? queue.map(renderQueueRow).join("")
+        : '<tr class="table-loading-row"><td colspan="7">No submissions awaiting review.</td></tr>';
+    }
+
+    const reviewedBody = document.getElementById("reviewed-body");
+    if (reviewedBody) {
+      reviewedBody.innerHTML = reviewed.length
+        ? reviewed.map(renderReviewedRow).join("")
+        : '<tr class="table-loading-row"><td colspan="6">No reviewed submissions yet.</td></tr>';
+    }
+
+    bindRowActions();
+    renderSchemaPreview();
+  }
+
+  function renderQueueRow(item: PriceSubmission): string {
+    const decision = evaluateAutoAccept(item, components);
+    const medianCell =
+      decision.movingMedian === null
+        ? '<span class="spec-year">no series</span>'
+        : `${formatPrice(decision.movingMedian, item.currency)}<br><span class="spec-year">${
+            decision.deviation === null ? "—" : (decision.deviation * 100).toFixed(1) + "%"
+          }</span>`;
+    const tier =
+      item.contributorTier === "trusted"
+        ? '<span class="badge badge-fair"><span class="badge-dot"></span>Trusted</span>'
+        : '<span class="badge badge-pending"><span class="badge-dot"></span>Anonymous</span>';
+
+    const reasonOptions = DENIAL_REASONS.map((r) => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join("");
+
+    return (
+      "<tr>" +
+      `<td><span class="component-name">${escapeHtml(item.componentName)}</span>` +
+      `<span class="component-category">${escapeHtml(item.category)}</span>` +
+      `<br><span class="spec-meta">${escapeHtml(item.sku)}</span></td>` +
+      `<td>${escapeHtml(item.contributorId)}<br>${tier}</td>` +
+      `<td class="num-cell market-price">${formatPrice(item.reportedPrice, item.currency)}</td>` +
+      `<td class="num-cell">${medianCell}</td>` +
+      `<td><a href="${escapeHtml(item.proofUrl)}" target="_blank" rel="noopener noreferrer">View</a></td>` +
+      `<td><span class="badge ${STATUS_BADGE[item.status]}"><span class="badge-dot"></span>${STATUS_LABEL[item.status]}</span></td>` +
+      `<td>` +
+      `<div class="admin-actions" style="margin-bottom:6px;">` +
+      `<button type="button" class="btn-approve" data-approve="${escapeHtml(item.submissionId)}">Approve</button>` +
+      `<button type="button" class="btn-reject" data-flag="${escapeHtml(item.submissionId)}">Flag</button>` +
+      `<button type="button" class="btn-reset" style="width:auto;" data-schema="${escapeHtml(item.submissionId)}">Schema</button>` +
+      `</div>` +
+      `<div class="admin-actions">` +
+      `<select class="deny-reason" data-reason-for="${escapeHtml(item.submissionId)}" aria-label="Denial reason">${reasonOptions}</select>` +
+      `<button type="button" class="btn-reject" data-deny="${escapeHtml(item.submissionId)}">Deny</button>` +
+      `</div>` +
+      `</td>` +
+      "</tr>"
+    );
+  }
+
+  function renderReviewedRow(item: PriceSubmission): string {
+    const note = item.denialReason ?? item.decisionNote ?? "—";
+    const auto = item.autoAccepted ? '<span class="component-category">auto</span>' : "";
+    return (
+      "<tr>" +
+      `<td><span class="component-name">${escapeHtml(item.componentName)}</span>` +
+      `<br><span class="spec-meta">${escapeHtml(item.sku)}</span></td>` +
+      `<td>${escapeHtml(item.contributorId)}</td>` +
+      `<td><span class="badge ${STATUS_BADGE[item.status]}"><span class="badge-dot"></span>${STATUS_LABEL[item.status]}</span>${auto}</td>` +
+      `<td><span class="spec-year">${escapeHtml(note)}</span></td>` +
+      `<td><span class="spec-year">${item.reviewedAt ? new Date(item.reviewedAt).toLocaleString() : "—"}</span></td>` +
+      `<td class="admin-actions">` +
+      `<button type="button" class="btn-reset" style="width:auto;" data-reopen="${escapeHtml(item.submissionId)}">Reopen</button>` +
+      `<button type="button" class="btn-reset" style="width:auto;" data-schema="${escapeHtml(item.submissionId)}">Schema</button>` +
+      `</td>` +
+      "</tr>"
+    );
+  }
+
+  function bindRowActions(): void {
+    document.querySelectorAll<HTMLButtonElement>("[data-approve]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        approve(btn.getAttribute("data-approve") as string);
+        renderAll();
+      });
+    });
+
+    document.querySelectorAll<HTMLButtonElement>("[data-deny]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-deny") as string;
+        const select = document.querySelector<HTMLSelectElement>(`[data-reason-for="${id}"]`);
+        deny(id, select?.value || "Denied by moderator");
+        renderAll();
+      });
+    });
+
+    document.querySelectorAll<HTMLButtonElement>("[data-flag]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        flag(btn.getAttribute("data-flag") as string);
+        renderAll();
+      });
+    });
+
+    document.querySelectorAll<HTMLButtonElement>("[data-reopen]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        reopen(btn.getAttribute("data-reopen") as string);
+        renderAll();
+      });
+    });
+
+    document.querySelectorAll<HTMLButtonElement>("[data-schema]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        schemaFor = btn.getAttribute("data-schema");
+        renderSchemaPreview();
+        document.getElementById("schema-preview")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    });
+  }
+
+  function renderSchemaPreview(): void {
+    const pre = document.getElementById("schema-preview");
+    if (!pre) return;
+    if (!schemaFor) {
+      pre.textContent = '// Select a submission\'s "Schema" action to preview its payload.';
+      return;
+    }
+    const submission = [...getReviewQueue(), ...getReviewed()].find((s) => s.submissionId === schemaFor);
+    pre.textContent = submission
+      ? JSON.stringify(toContributorSchema(submission), null, 2)
+      : "// Submission no longer exists.";
+  }
+
+  function initAutoAcceptButton(): void {
+    document.getElementById("run-auto-accept")?.addEventListener("click", () => {
+      const resultEl = document.getElementById("auto-accept-result") as HTMLParagraphElement | null;
+      const { approved, skipped } = runAutoAcceptEngine(components);
+      renderAll();
+      if (!resultEl) return;
+      resultEl.hidden = false;
+      resultEl.textContent =
+        approved.length === 0
+          ? `No submissions auto-accepted. ${skipped.length} left for manual review${
+              skipped.length ? ` — e.g. ${skipped[0].decision.reason}` : "."
+            }`
+          : `Auto-accepted ${approved.length} submission${approved.length === 1 ? "" : "s"}; ${skipped.length} left for manual review.`;
+    });
+  }
+
+  function initSettingsForm(): void {
+    const form = document.getElementById("settings-form") as HTMLFormElement;
+    const marketDbInput = document.getElementById("s-market-db") as HTMLInputElement;
+    const contributorsInput = document.getElementById("s-contributors") as HTMLInputElement;
+    const donationsApiInput = document.getElementById("s-donations-api") as HTMLInputElement;
+    const githubSponsorsInput = document.getElementById("s-github-sponsors") as HTMLInputElement;
+    const paypalInput = document.getElementById("s-paypal") as HTMLInputElement;
+    const customLabelInput = document.getElementById("s-custom-label") as HTMLInputElement;
+    const customUrlInput = document.getElementById("s-custom-url") as HTMLInputElement;
+    const savedEl = document.getElementById("settings-saved") as HTMLParagraphElement;
+
+    function load(): void {
+      const current = getSettings();
+      marketDbInput.value = current.marketDbUrl;
+      contributorsInput.value = current.contributorsUrl;
+      donationsApiInput.value = current.donationsApiUrl;
+      githubSponsorsInput.value = current.githubSponsorsUrl;
+      paypalInput.value = current.paypalUrl;
+      customLabelInput.value = current.customDonationLabel;
+      customUrlInput.value = current.customDonationUrl;
+    }
+    load();
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      setSettings({
+        marketDbUrl: marketDbInput.value,
+        contributorsUrl: contributorsInput.value,
+        donationsApiUrl: donationsApiInput.value,
+        githubSponsorsUrl: githubSponsorsInput.value,
+        paypalUrl: paypalInput.value,
+        customDonationLabel: customLabelInput.value,
+        customDonationUrl: customUrlInput.value
+      });
+      savedEl.hidden = false;
+      savedEl.textContent = "Saved.";
+      setTimeout(() => { savedEl.hidden = true; }, 2500);
+    });
+
+    document.getElementById("settings-reset")?.addEventListener("click", () => {
+      resetSettings();
+      load();
+      savedEl.hidden = false;
+      savedEl.textContent = "Reset to defaults.";
+      setTimeout(() => { savedEl.hidden = true; savedEl.textContent = "Saved."; }, 2500);
+    });
+  }
+</script>

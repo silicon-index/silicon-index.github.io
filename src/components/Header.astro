@@ -1,0 +1,54 @@
+---
+import EcosystemNav from "./EcosystemNav.astro";
+
+interface Props {
+  activeNav?: "screener" | "contribute" | "admin" | "login" | "none";
+}
+
+const { activeNav = "none" } = Astro.props;
+---
+
+<header class="flex items-center justify-between gap-3 flex-wrap px-5 py-2.5 bg-bg-raised border-b border-border sticky top-0 z-10">
+  <div class="flex items-center gap-2">
+    <span class="inline-flex items-center justify-center w-6.5 h-6.5 rounded-md bg-accent text-[#04101f] font-bold text-[11px]">SI</span>
+    <span class="font-semibold text-sm">Silicon Index</span>
+    <span class="text-[11px] text-text-faint border border-border rounded-full px-1.5 py-0.5">Astro MVP</span>
+  </div>
+  <nav class="flex items-center gap-1" aria-label="Primary">
+    <a href="/" class:list={["nav-link", activeNav === "screener" && "nav-link--active"]}>Screener</a>
+    <a href="/contribute" class:list={["nav-link", activeNav === "contribute" && "nav-link--active"]}>Contribute</a>
+    <a href="/#support-panel" class="nav-link nav-link--support">♥ Support</a>
+    <EcosystemNav variant="header" />
+  </nav>
+  <div class="flex items-center gap-2">
+    <span id="nav-auth-slot" class="flex items-center gap-1.5"></span>
+  </div>
+</header>
+
+<script>
+  import { getSession, logout, ensureDemoAdmin } from "@/lib/auth";
+
+  await ensureDemoAdmin();
+
+  function escapeHtml(str: string): string {
+    return String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+  }
+
+  const slot = document.getElementById("nav-auth-slot");
+  if (slot) {
+    const session = getSession();
+    if (session) {
+      const adminLink = session.role === "admin" ? '<a class="nav-link" href="/admin">Admin</a>' : "";
+      slot.innerHTML =
+        adminLink +
+        `<span class="nav-user">${escapeHtml(session.username)}<span class="nav-role-badge">${escapeHtml(session.role)}</span></span>` +
+        '<button type="button" class="nav-link nav-link--btn" id="nav-sign-out">Sign out</button>';
+      document.getElementById("nav-sign-out")?.addEventListener("click", () => {
+        logout();
+        window.location.href = "/";
+      });
+    } else {
+      slot.innerHTML = '<a class="nav-link" href="/login">Sign in / Register</a>';
+    }
+  }
+</script>

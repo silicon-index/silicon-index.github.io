@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel — Silicon Index</title>
+  <meta name="description" content="Moderation panel for reviewing community-submitted market prices." />
+  <meta name="theme-color" content="#0b0f19" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">SI</span>
+        <span class="brand-name">Silicon Index</span>
+        <span class="brand-tag">Admin</span>
+      </div>
+      <nav class="topbar-nav" aria-label="Primary">
+        <a class="nav-link" href="index.html">Screener</a>
+        <a class="nav-link" href="contribute.html">Contribute</a>
+      </nav>
+      <div class="topbar-meta">
+        <span id="nav-auth-slot" class="nav-auth-slot"></span>
+      </div>
+    </header>
+
+    <div class="layout">
+      <main class="content">
+
+        <div id="admin-denied" class="form-panel" hidden>
+          <h1>Access Denied</h1>
+          <p class="form-intro">You need to be signed in with an admin account to view this page.</p>
+          <p class="form-intro">Demo admin credentials: <code>admin</code> / <code>admin123</code>.</p>
+          <a class="btn-primary btn-primary--link" href="login.html">Go to Sign In</a>
+        </div>
+
+        <div id="admin-content" hidden>
+          <section class="form-panel" aria-labelledby="settings-heading" style="margin-top:0;">
+            <h1 id="settings-heading" style="font-size:15px;">Data Source Settings</h1>
+            <p class="form-intro">
+              These are pointer links only — no live repo is queried from this static site. Switching them updates
+              the "Market Database" and "Contributors" links shown across the portal (screener ecosystem grid,
+              contribute page). Both source repos currently only contain a stub <code>README.md</code> and have no
+              GitHub Pages deployment, so linking to their <code>dev</code> branch is the most useful default.
+            </p>
+            <form id="settings-form">
+              <div class="form-row">
+                <label for="s-market-db">Market Database source</label>
+                <input type="url" id="s-market-db" required />
+              </div>
+              <div class="form-row">
+                <label for="s-contributors">Contributors storage source</label>
+                <input type="url" id="s-contributors" required />
+              </div>
+              <div class="form-row">
+                <label for="s-donations-api">Donations API source</label>
+                <input type="url" id="s-donations-api" required />
+              </div>
+
+              <h3 style="font-size:12.5px; color:var(--text-dim); margin:18px 0 10px; text-transform:uppercase; letter-spacing:0.04em;">Support / Donation Links</h3>
+              <p class="field-hint" style="margin:0 0 12px;">
+                Leave a field blank to hide that button on the "Support Silicon Index" panel. This site never
+                collects payment details itself — these are plain outbound links to whichever processor you pick.
+              </p>
+              <div class="form-row">
+                <label for="s-github-sponsors">GitHub Sponsors URL</label>
+                <input type="url" id="s-github-sponsors" placeholder="https://github.com/sponsors/silicon-index" />
+              </div>
+              <div class="form-row">
+                <label for="s-paypal">PayPal / other processor URL</label>
+                <input type="url" id="s-paypal" placeholder="https://paypal.me/your-org" />
+              </div>
+              <div class="form-row form-row--split">
+                <div>
+                  <label for="s-custom-label">Custom link label</label>
+                  <input type="text" id="s-custom-label" maxlength="40" placeholder="Ko-fi" />
+                </div>
+                <div>
+                  <label for="s-custom-url">Custom link URL</label>
+                  <input type="url" id="s-custom-url" placeholder="https://ko-fi.com/your-org" />
+                </div>
+              </div>
+
+              <div class="admin-actions" style="margin-bottom:6px;">
+                <button type="submit" class="btn-approve">Save</button>
+                <button type="button" id="settings-reset" class="btn-reject">Reset to defaults</button>
+              </div>
+              <p id="settings-saved" class="form-success" hidden>Saved.</p>
+            </form>
+          </section>
+
+          <section class="form-panel" aria-labelledby="anon-heading">
+            <h2 id="anon-heading" style="font-size:14px; margin:0 0 8px;">Contributor Identity</h2>
+            <p class="form-intro" style="margin:0;">
+              Signed-in submissions are attributed to the account's username and become <strong>Trusted
+              Contributor</strong> once approved. Submissions made while signed out are attributed to a random
+              per-browser pseudonymous ID (e.g. <code>anon-4f9k2p1x</code>, stored in that browser's
+              <code>localStorage</code>) and become <strong>Anonymous Contribution</strong> once approved. Real IP
+              addresses are intentionally never collected client-side — this site has no server to see them, and
+              capturing them here would break the "no PII" whitelist rule in <a href="DEV-GUIDE.md">DEV-GUIDE.md</a>.
+              IP-based dedup/trust, if ever added, belongs server-side in <code>silicon-index-backend-api</code>
+              (see Phase 5 in <a href="dev-index.md">dev-index.md</a>).
+            </p>
+          </section>
+
+          <section class="table-panel" aria-labelledby="pending-heading" style="margin-top:20px;">
+            <div class="table-panel-header">
+              <h1 id="pending-heading">Pending Review</h1>
+              <span id="pending-count" class="meta-chip">0 pending</span>
+            </div>
+            <div class="table-container">
+              <table class="screener-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Component</th>
+                    <th scope="col">Socket / Gen</th>
+                    <th scope="col" class="col-num">Observed Price</th>
+                    <th scope="col">Contributor</th>
+                    <th scope="col">Proof</th>
+                    <th scope="col">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="pending-body">
+                  <tr class="table-loading-row"><td colspan="6">No pending submissions.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="table-panel" aria-labelledby="reviewed-heading" style="margin-top:20px;">
+            <div class="table-panel-header">
+              <h2 id="reviewed-heading">Reviewed History</h2>
+            </div>
+            <div class="table-container">
+              <table class="screener-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Component</th>
+                    <th scope="col">Contributor</th>
+                    <th scope="col">Trust</th>
+                    <th scope="col">Reviewed</th>
+                  </tr>
+                </thead>
+                <tbody id="reviewed-body">
+                  <tr class="table-loading-row"><td colspan="4">No reviewed submissions yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+      </main>
+    </div>
+
+    <footer class="footer">
+      <p>Silicon Index MVP · Client-side demo — moderation state lives only in this browser (localStorage).</p>
+      <p class="footer-links">
+        <a href="index.html">Back to Screener</a>
+      </p>
+    </footer>
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="contributions.js"></script>
+  <script src="settings.js"></script>
+  <script src="nav.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      document.addEventListener("DOMContentLoaded", function () {
+        var session = window.SiAuth.getSession();
+        var denied = document.getElementById("admin-denied");
+        var content = document.getElementById("admin-content");
+
+        if (!session || session.role !== "admin") {
+          denied.hidden = false;
+          return;
+        }
+        content.hidden = false;
+        renderAll();
+        initSettingsForm();
+
+        function initSettingsForm() {
+          var form = document.getElementById("settings-form");
+          var marketDbInput = document.getElementById("s-market-db");
+          var contributorsInput = document.getElementById("s-contributors");
+          var donationsApiInput = document.getElementById("s-donations-api");
+          var githubSponsorsInput = document.getElementById("s-github-sponsors");
+          var paypalInput = document.getElementById("s-paypal");
+          var customLabelInput = document.getElementById("s-custom-label");
+          var customUrlInput = document.getElementById("s-custom-url");
+          var savedEl = document.getElementById("settings-saved");
+
+          function load() {
+            var current = window.SiSettings.get();
+            marketDbInput.value = current.marketDbUrl;
+            contributorsInput.value = current.contributorsUrl;
+            donationsApiInput.value = current.donationsApiUrl;
+            githubSponsorsInput.value = current.githubSponsorsUrl;
+            paypalInput.value = current.paypalUrl;
+            customLabelInput.value = current.customDonationLabel;
+            customUrlInput.value = current.customDonationUrl;
+          }
+          load();
+
+          form.addEventListener("submit", function (e) {
+            e.preventDefault();
+            window.SiSettings.set({
+              marketDbUrl: marketDbInput.value,
+              contributorsUrl: contributorsInput.value,
+              donationsApiUrl: donationsApiInput.value,
+              githubSponsorsUrl: githubSponsorsInput.value,
+              paypalUrl: paypalInput.value,
+              customDonationLabel: customLabelInput.value,
+              customDonationUrl: customUrlInput.value
+            });
+            savedEl.hidden = false;
+            setTimeout(function () { savedEl.hidden = true; }, 2500);
+          });
+
+          document.getElementById("settings-reset").addEventListener("click", function () {
+            window.SiSettings.reset();
+            load();
+            savedEl.hidden = false;
+            savedEl.textContent = "Reset to defaults.";
+            setTimeout(function () { savedEl.hidden = true; savedEl.textContent = "Saved."; }, 2500);
+          });
+        }
+
+        function renderAll() {
+          var all = window.SiContributions.getAll();
+          var pending = all.filter(function (i) { return i.status === "pending"; });
+          var reviewed = all.filter(function (i) { return i.status !== "pending"; })
+            .sort(function (a, b) { return new Date(b.reviewedAt) - new Date(a.reviewedAt); });
+
+          document.getElementById("pending-count").textContent = pending.length + " pending";
+
+          var pendingBody = document.getElementById("pending-body");
+          pendingBody.innerHTML = pending.length
+            ? pending.map(renderPendingRow).join("")
+            : '<tr class="table-loading-row"><td colspan="6">No pending submissions.</td></tr>';
+
+          var reviewedBody = document.getElementById("reviewed-body");
+          reviewedBody.innerHTML = reviewed.length
+            ? reviewed.map(renderReviewedRow).join("")
+            : '<tr class="table-loading-row"><td colspan="4">No reviewed submissions yet.</td></tr>';
+
+          Array.prototype.forEach.call(document.querySelectorAll("[data-approve]"), function (btn) {
+            btn.addEventListener("click", function () {
+              window.SiContributions.setStatus(btn.getAttribute("data-approve"), "approved");
+              renderAll();
+            });
+          });
+          Array.prototype.forEach.call(document.querySelectorAll("[data-reject]"), function (btn) {
+            btn.addEventListener("click", function () {
+              window.SiContributions.setStatus(btn.getAttribute("data-reject"), "rejected");
+              renderAll();
+            });
+          });
+        }
+
+        function renderPendingRow(item) {
+          return (
+            "<tr>" +
+            '<td><span class="component-name">' + escapeHtml(item.componentName) + "</span>" +
+            '<span class="component-category">' + escapeHtml(item.category) + "</span></td>" +
+            '<td><span class="spec-meta">' + escapeHtml(item.socket) + " · " + escapeHtml(item.generation) + "</span></td>" +
+            '<td class="num-cell market-price">' + formatPrice(item.observedPrice, item.currency) + "</td>" +
+            "<td>" + escapeHtml(item.contributor) + "</td>" +
+            '<td><a href="' + escapeAttr(item.proofUrl) + '" target="_blank" rel="noopener noreferrer">View</a></td>' +
+            '<td class="admin-actions">' +
+            '<button type="button" class="btn-approve" data-approve="' + escapeAttr(item.id) + '">Approve</button>' +
+            '<button type="button" class="btn-reject" data-reject="' + escapeAttr(item.id) + '">Reject</button>' +
+            "</td></tr>"
+          );
+        }
+
+        function renderReviewedRow(item) {
+          var trustClass = item.status === "approved" ? "badge-fair" : "badge-scalper";
+          return (
+            "<tr>" +
+            '<td><span class="component-name">' + escapeHtml(item.componentName) + "</span></td>" +
+            "<td>" + escapeHtml(item.contributor) + "</td>" +
+            '<td><span class="badge ' + trustClass + '"><span class="badge-dot"></span>' + escapeHtml(item.trust) + "</span></td>" +
+            "<td><span class=\"spec-year\">" + new Date(item.reviewedAt).toLocaleString() + "</span></td>" +
+            "</tr>"
+          );
+        }
+
+        function formatPrice(value, currency) {
+          var symbol = currency === "USD" ? "$" : currency === "EUR" ? "€" : currency + " ";
+          return symbol + Number(value).toLocaleString();
+        }
+
+        function escapeHtml(str) {
+          return String(str).replace(/[&<>"']/g, function (c) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+          });
+        }
+
+        function escapeAttr(str) {
+          return escapeHtml(str);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+---
+---
+<section class="table-panel community-panel mx-4" id="support-panel" aria-labelledby="support-heading">
+  <div class="table-panel-header">
+    <h2 id="support-heading">Support Silicon Index</h2>
+    <span class="meta-chip">community-funded</span>
+  </div>
+  <p class="ecosystem-intro">
+    Silicon Index has no ads and sells no data — hosting and scraping infrastructure are funded by donations,
+    routed through the (not-yet-deployed)
+    <a href="https://github.com/silicon-index/silicon-index-donations-api.github.io/tree/dev" target="_blank" rel="noopener noreferrer">silicon-index-donations-api</a>
+    once it's live. Payment links below are configured by admins in the <a href="/admin">Admin Panel</a> — this
+    site never collects card details itself, it only links out to the processor an admin chooses.
+  </p>
+  <div id="support-links" class="support-links">
+    <p id="support-empty" class="empty-state" hidden>No payment links are configured yet.</p>
+  </div>
+</section>
+
+<script>
+  import { get as getSettings } from "@/lib/settings";
+
+  const settings = getSettings();
+  const container = document.getElementById("support-links");
+  const emptyEl = document.getElementById("support-empty") as HTMLParagraphElement | null;
+  if (container && emptyEl) {
+    const options = [
+      { url: settings.githubSponsorsUrl, label: "GitHub Sponsors", cls: "support-btn--sponsors" },
+      { url: settings.paypalUrl, label: "PayPal", cls: "support-btn--paypal" },
+      { url: settings.customDonationUrl, label: settings.customDonationLabel || "Donate", cls: "support-btn--custom" }
+    ].filter((o) => o.url);
+
+    if (options.length === 0) {
+      emptyEl.hidden = false;
+    } else {
+      emptyEl.hidden = true;
+      options.forEach((o) => {
+        const a = document.createElement("a");
+        a.className = "support-btn " + o.cls;
+        a.href = o.url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.textContent = o.label;
+        container.appendChild(a);
+      });
+    }
+  }
+</script>
