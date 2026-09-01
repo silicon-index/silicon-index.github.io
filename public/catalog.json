@@ -8,10 +8,13 @@
     "originalMSRP": 878,
     "currency": "USD",
     "specs": {
+      "architecture": "P5",
       "socket": "Socket 4",
-      "generation": "P5",
       "cores": 1,
-      "tdpWatts": 14
+      "threads": 1,
+      "baseClock": 60,
+      "tdp": 14,
+      "cache": "8KB L1"
     }
   },
   {
@@ -23,10 +26,13 @@
     "originalMSRP": 1981,
     "currency": "USD",
     "specs": {
+      "architecture": "Klamath",
       "socket": "Slot 1",
-      "generation": "Klamath",
       "cores": 1,
-      "tdpWatts": 43
+      "threads": 1,
+      "baseClock": 300,
+      "tdp": 43,
+      "cache": "512KB L2"
     }
   },
   {
@@ -38,10 +44,13 @@
     "originalMSRP": 417,
     "currency": "USD",
     "specs": {
+      "architecture": "K8",
       "socket": "Socket 754",
-      "generation": "K8",
       "cores": 1,
-      "tdpWatts": 89
+      "threads": 1,
+      "baseClock": 2000,
+      "tdp": 89,
+      "cache": "1MB L2"
     }
   },
   {
@@ -53,10 +62,13 @@
     "originalMSRP": 316,
     "currency": "USD",
     "specs": {
+      "architecture": "Conroe",
       "socket": "LGA775",
-      "generation": "Conroe",
       "cores": 2,
-      "tdpWatts": 65
+      "threads": 2,
+      "baseClock": 2400,
+      "tdp": 65,
+      "cache": "4MB L2"
     }
   },
   {
@@ -68,10 +80,13 @@
     "originalMSRP": 449,
     "currency": "USD",
     "specs": {
+      "architecture": "Zen 3",
       "socket": "AM4",
-      "generation": "Zen 3",
       "cores": 8,
-      "tdpWatts": 105
+      "threads": 16,
+      "baseClock": 3400,
+      "tdp": 105,
+      "cache": "96MB L3"
     }
   },
   {
@@ -83,9 +98,10 @@
     "originalMSRP": 179,
     "currency": "USD",
     "specs": {
-      "vramGb": 0.032,
+      "architecture": "TNT2",
+      "vramCapacity": 0.032,
       "vramType": "SDR",
-      "generation": "TNT2"
+      "coreClock": 175
     }
   },
   {
@@ -97,9 +113,11 @@
     "originalMSRP": 599,
     "currency": "USD",
     "specs": {
-      "vramGb": 0.768,
-      "cudaCores": 128,
-      "tdpWatts": 155
+      "architecture": "Tesla",
+      "vramCapacity": 0.768,
+      "vramType": "GDDR3",
+      "computeUnits": 128,
+      "tdp": 155
     }
   },
   {
@@ -111,8 +129,11 @@
     "originalMSRP": 379,
     "currency": "USD",
     "specs": {
-      "vramGb": 1,
-      "streamProcessors": 1600
+      "architecture": "TeraScale 2",
+      "vramCapacity": 1,
+      "vramType": "GDDR5",
+      "computeUnits": 1600,
+      "tdp": 188
     }
   }
 ]

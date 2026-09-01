@@ -16,6 +16,7 @@
 
 import type { SubmissionStatus } from "../admin/contracts";
 import type { SourceType } from "../scrapers/contracts";
+import type { ComponentCategory, SpecsByCategory } from "../database/contracts";
 
 export type { SubmissionStatus };
 
@@ -31,7 +32,12 @@ export type { SubmissionStatus };
 export type ContributorTier = "anonymous" | "trusted";
 
 export interface ContributorProfile {
-  /** Username, or a pseudonymous `anon-xxxxxxxx` id. Never PII. */
+  /**
+   * Reputation key this profile is aggregated under — the submitting
+   * browser's `contributorHash`, or the account username when signed in.
+   */
+  contributorHash: string;
+  /** Display handle: `anon-xxxxxxxx`, or the username. Never PII. */
   contributorId: string;
   tier: ContributorTier;
   /** 0–100. Derived from approved vs. denied/flagged submission history. */
@@ -44,18 +50,33 @@ export interface ContributorProfile {
 /* Submission payload (internal canonical shape)                       */
 /* ------------------------------------------------------------------ */
 
-export interface PriceSubmission {
+/**
+ * Fields common to every submission, whatever the category.
+ *
+ * A submission is a PROPOSAL against the catalogue: it carries enough of the
+ * base template (`database/contracts.ts`) to become a `CatalogComponent` on
+ * approval, plus the observed price and its proof. It is never applied
+ * directly — it stages as `pending` and an admin must approve it.
+ */
+export interface SubmissionBase {
   submissionId: string;
+  /**
+   * Persistent pseudonymous reputation key for the submitting browser
+   * (`identity.ts`). Mandatory: every submission must be attributable to a
+   * stable key, or a trust score cannot accrue.
+   *
+   * A random UUID — never PII, never derived from an IP or a fingerprint. It
+   * is a pseudonym, not anonymity: it links this browser's submissions to one
+   * another by design.
+   */
+  contributorHash: string;
   /** Normalized `component_id`; `componentName` is the display string. */
   sku: string;
   componentName: string;
-  category: string;
-  socket: string;
-  generation: string;
+  manufacturer: string;
   releaseYear: number;
   reportedPrice: number;
   currency: string;
-  tdpWatts: number | null;
   /** Mandatory proof of value — link to the completed transaction or listing. */
   proofUrl: string;
   status: SubmissionStatus;
@@ -71,8 +92,31 @@ export interface PriceSubmission {
   decisionNote?: string;
 }
 
+export type SubmissionOf<C extends ComponentCategory> = SubmissionBase & {
+  category: C;
+  specs: SpecsByCategory[C];
+};
+
+/**
+ * A staged price submission, discriminated on `category` exactly like
+ * `CatalogComponent`. This is what links a contribution to the database
+ * contracts: a GPU submission cannot carry a socket, because `GpuSpecs` has
+ * none — the compiler rejects it before validation ever runs.
+ */
+export type PriceSubmission =
+  | SubmissionOf<"CPU">
+  | SubmissionOf<"GPU">
+  | SubmissionOf<"RAM">
+  | SubmissionOf<"MOBO">
+  | SubmissionOf<"STORAGE">;
+
 /** Fields a contributor supplies; the rest are assigned when staging. */
-export type NewSubmissionInput = Omit<PriceSubmission, "submissionId" | "status" | "submittedAt">;
+export type NewSubmissionInput =
+  | Omit<SubmissionOf<"CPU">, "submissionId" | "status" | "submittedAt">
+  | Omit<SubmissionOf<"GPU">, "submissionId" | "status" | "submittedAt">
+  | Omit<SubmissionOf<"RAM">, "submissionId" | "status" | "submittedAt">
+  | Omit<SubmissionOf<"MOBO">, "submissionId" | "status" | "submittedAt">
+  | Omit<SubmissionOf<"STORAGE">, "submissionId" | "status" | "submittedAt">;
 
 /* ------------------------------------------------------------------ */
 /* Verification schemas                                                */
@@ -131,7 +175,7 @@ export interface ContributorSchemaPayload {
   timestamp: string;
   source_type: SourceType;
   proof_url: string;
-  contributor: { id: string; tier: ContributorTier };
+  contributor: { id: string; hash: string; tier: ContributorTier };
   status: SubmissionStatus;
   review: { reviewed_at: string | null; auto_accepted: boolean; note: string | null };
 }
@@ -146,6 +190,8 @@ export interface ContributorSchemaPayload {
  */
 export interface ContributorSubmission {
   id: string;
+  /** Reputation key, mirrored from the internal model. */
+  contributorHash: string;
   sku: string;
   reportedPrice: number;
   currency: string;
@@ -156,14 +202,25 @@ export interface ContributorSubmission {
   status: SubmissionStatus;
 }
 
-/** Adapts an upstream record into the portal's internal model. */
-export function toPriceSubmission(
+/**
+ * Adapts an upstream record into the portal's internal model.
+ *
+ * The upstream wire shape carries no catalogue detail, so the caller supplies
+ * it — including the category and its matching specs, which the generic ties
+ * together so a GPU cannot arrive with CPU specs.
+ */
+export function toPriceSubmission<C extends ComponentCategory>(
   upstream: ContributorSubmission,
-  details: Pick<
-    PriceSubmission,
-    "componentName" | "category" | "socket" | "generation" | "releaseYear" | "contributorId"
-  >
-): PriceSubmission {
+  details: {
+    componentName: string;
+    manufacturer: string;
+    releaseYear: number;
+    contributorId: string;
+    contributorHash: string;
+    category: C;
+    specs: SpecsByCategory[C];
+  }
+): SubmissionOf<C> {
   return {
     submissionId: upstream.id,
     sku: upstream.sku,
@@ -173,7 +230,6 @@ export function toPriceSubmission(
     submittedAt: new Date(upstream.submittedAt).toISOString(),
     contributorTier: upstream.contributorTier,
     status: upstream.status,
-    tdpWatts: null,
     ...details
   };
 }
@@ -182,6 +238,7 @@ export function toPriceSubmission(
 export function toContributorSubmission(submission: PriceSubmission): ContributorSubmission {
   return {
     id: submission.submissionId,
+    contributorHash: submission.contributorHash,
     sku: submission.sku,
     reportedPrice: submission.reportedPrice,
     currency: submission.currency,

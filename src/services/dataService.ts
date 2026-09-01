@@ -23,7 +23,8 @@
  */
 
 import type { ComponentEntry, HardwareComponent } from "@modules/database/contracts";
-import type { ContributorProfile, PriceSubmission } from "@modules/contributors/contracts";
+import type { ContributorProfile, NewSubmissionInput, PriceSubmission } from "@modules/contributors/contracts";
+import { CATEGORY_ALIASES } from "@modules/database/contracts";
 import { isHardwareComponentArray, normalizeSku, toHardwareComponent } from "@modules/database/adapters";
 import { buildContributorRegistry } from "@modules/contributors/registry";
 
@@ -141,15 +142,14 @@ export async function fetchContributors(): Promise<ServiceResult<ContributorProf
 }
 
 /** Stages a new submission locally for review. Returns the stored record. */
-export function stageSubmission(
-  entry: Omit<PriceSubmission, "submissionId" | "status" | "submittedAt">
-): PriceSubmission {
-  const submission: PriceSubmission = {
-    ...entry,
+export function stageSubmission(entry: NewSubmissionInput): PriceSubmission {
+  // Object.assign keeps the union member intact; a spread literal would widen
+  // `category` to `string` and detach it from `specs`.
+  const submission: PriceSubmission = Object.assign({}, entry, {
     submissionId: "sub_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8),
-    status: "pending",
+    status: "pending" as const,
     submittedAt: new Date().toISOString()
-  };
+  });
   const staged = readStaged();
   staged.push(submission);
   writeStaged(staged);
@@ -163,7 +163,13 @@ export function stageSubmission(
 export function readStaged(): PriceSubmission[] {
   try {
     const raw = JSON.parse(localStorage.getItem(STAGING_KEY) || "[]");
-    return Array.isArray(raw) ? raw.map(migrateLegacySubmission) : [];
+    if (!Array.isArray(raw)) return [];
+    const migrated = raw.map(migrateLegacySubmission);
+    const dropped = migrated.filter((s) => s === null).length;
+    // Never drop silently: a legacy record with an unmappable category is
+    // reported so it can be investigated rather than quietly disappearing.
+    if (dropped > 0) console.warn(`[dataService] ${dropped} staged submission(s) could not be migrated and were skipped.`);
+    return migrated.filter((s): s is PriceSubmission => s !== null);
   } catch {
     return [];
   }
@@ -178,8 +184,17 @@ export function writeStaged(items: PriceSubmission[]): void {
  * (`observedPrice`/`contributor`/`isAnonymous`, status `rejected`) so existing
  * browsers don't lose their staged submissions on upgrade.
  */
-function migrateLegacySubmission(raw: Record<string, unknown>): PriceSubmission {
-  if (raw.submissionId && raw.reportedPrice !== undefined) return raw as unknown as PriceSubmission;
+function migrateLegacySubmission(raw: Record<string, unknown>): PriceSubmission | null {
+  if (raw.submissionId && raw.reportedPrice !== undefined && raw.specs !== undefined) {
+    return raw as unknown as PriceSubmission;
+  }
+
+  // Legacy records carried a free-text category and flat socket/generation
+  // fields. Map what can be mapped; a record whose category has no canonical
+  // form cannot become a valid union member, and inventing one would file the
+  // part under a category the contributor never chose.
+  const category = CATEGORY_ALIASES[String(raw.category ?? "").trim().toLowerCase()];
+  if (!category) return null;
 
   const legacyStatus = String(raw.status ?? "pending");
   const status = (legacyStatus === "rejected"
@@ -188,22 +203,42 @@ function migrateLegacySubmission(raw: Record<string, unknown>): PriceSubmission 
       ? legacyStatus
       : "pending") as PriceSubmission["status"];
 
-  return {
-    submissionId: String(raw.id ?? "sub_migrated_" + Math.random().toString(36).slice(2, 10)),
-    sku: String(raw.sku ?? normalizeSku(String(raw.componentName ?? "unknown"), String(raw.category ?? ""))),
+  const contributorId = String(raw.contributorId ?? raw.contributor ?? "anon-legacy");
+
+  const base = {
+    submissionId: String(raw.id ?? raw.submissionId ?? "sub_migrated_" + Math.random().toString(36).slice(2, 10)),
+    // Pre-hash records have no UUID. Reusing the old handle as the key keeps a
+    // contributor's existing reputation intact instead of resetting it.
+    contributorHash: String(raw.contributorHash ?? contributorId),
+    sku: String(raw.sku ?? normalizeSku(String(raw.componentName ?? "unknown"), category)),
     componentName: String(raw.componentName ?? "Unknown component"),
-    category: String(raw.category ?? ""),
-    socket: String(raw.socket ?? ""),
-    generation: String(raw.generation ?? ""),
+    manufacturer: String(raw.manufacturer ?? "Unknown"),
     releaseYear: Number(raw.releaseYear ?? 0),
     reportedPrice: Number(raw.observedPrice ?? raw.reportedPrice ?? 0),
     currency: String(raw.currency ?? "USD"),
-    tdpWatts: raw.tdpWatts === null || raw.tdpWatts === undefined ? null : Number(raw.tdpWatts),
     proofUrl: String(raw.proofUrl ?? ""),
     status,
-    contributorId: String(raw.contributorId ?? raw.contributor ?? "anon-legacy"),
-    contributorTier: raw.isAnonymous === false ? "trusted" : "anonymous",
+    contributorId,
+    contributorTier: (raw.isAnonymous === false ? "trusted" : "anonymous") as PriceSubmission["contributorTier"],
     submittedAt: String(raw.submittedAt ?? new Date().toISOString()),
     reviewedAt: raw.reviewedAt ? String(raw.reviewedAt) : undefined
   };
+
+  const architecture = String(raw.generation ?? "Unknown");
+  const socket = String(raw.socket ?? "Unknown");
+  const tdp = raw.tdpWatts === null || raw.tdpWatts === undefined ? undefined : Number(raw.tdpWatts);
+
+  switch (category) {
+    case "CPU":
+      return { ...base, category, specs: { architecture, socket, cores: 0, tdp } };
+    case "GPU":
+      return { ...base, category, specs: { architecture, vramCapacity: 0, tdp } };
+    case "MOBO":
+      return { ...base, category, specs: { chipset: architecture, socket, formFactor: "Unknown", memoryType: "Unknown" } };
+    case "RAM":
+      return { ...base, category, specs: { capacity: 0, memoryType: architecture, speed: 0 } };
+    case "STORAGE":
+      return { ...base, category, specs: { type: "SATA", capacity: 0 } };
+  }
 }
+

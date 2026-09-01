@@ -21,10 +21,23 @@ export type { ContributorSchemaPayload };
  * a contributor with no reviewed submissions scores 0 rather than 100.
  */
 export function buildContributorRegistry(submissions: PriceSubmission[]): ContributorProfile[] {
-  const byId = new Map<string, { approved: number; rejected: number; tier: ContributorTier; last: string | null }>();
+  // Keyed on the full hash, not the truncated display handle: two contributors
+  // could share a handle prefix, and merging their reputations would hand one
+  // of them a score they never earned.
+  const byId = new Map<
+    string,
+    { approved: number; rejected: number; tier: ContributorTier; last: string | null; handle: string }
+  >();
 
   submissions.forEach((s) => {
-    const current = byId.get(s.contributorId) ?? { approved: 0, rejected: 0, tier: s.contributorTier, last: null };
+    const key = s.contributorHash || s.contributorId;
+    const current = byId.get(key) ?? {
+      approved: 0,
+      rejected: 0,
+      tier: s.contributorTier,
+      last: null,
+      handle: s.contributorId
+    };
     if (s.status === "approved") {
       current.approved += 1;
       if (!current.last || new Date(s.reviewedAt ?? 0) > new Date(current.last)) current.last = s.reviewedAt ?? null;
@@ -33,14 +46,15 @@ export function buildContributorRegistry(submissions: PriceSubmission[]): Contri
     }
     // A contributor is "trusted" if any submission was made while signed in.
     if (s.contributorTier === "trusted") current.tier = "trusted";
-    byId.set(s.contributorId, current);
+    byId.set(key, current);
   });
 
   return Array.from(byId.entries())
-    .map(([contributorId, v]) => {
+    .map(([contributorHash, v]) => {
       const reviewed = v.approved + v.rejected;
       return {
-        contributorId,
+        contributorHash,
+        contributorId: v.handle,
         tier: v.tier,
         trustScore: reviewed === 0 ? 0 : Math.round((v.approved / reviewed) * 100),
         verifiedSubmissions: v.approved,
@@ -61,7 +75,11 @@ export function toContributorSchema(submission: PriceSubmission): ContributorSch
     timestamp: submission.submittedAt,
     source_type: "marketplace_avg",
     proof_url: submission.proofUrl,
-    contributor: { id: submission.contributorId, tier: submission.contributorTier },
+    contributor: {
+      id: submission.contributorId,
+      hash: submission.contributorHash,
+      tier: submission.contributorTier
+    },
     status: submission.status,
     review: {
       reviewed_at: submission.reviewedAt ?? null,

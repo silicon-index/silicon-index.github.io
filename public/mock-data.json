@@ -10,9 +10,14 @@
     "marketPrice": 449,
     "currency": "USD",
     "specs": {
+      "architecture": "Zen 4",
       "socket": "AM5",
-      "generation": "Zen 4",
-      "tdpWatts": 120
+      "cores": 8,
+      "threads": 16,
+      "baseClock": 4200,
+      "boostClock": 5000,
+      "tdp": 120,
+      "cache": "96MB L3"
     },
     "priceHistory": [
       {
@@ -76,9 +81,14 @@
     "marketPrice": 402,
     "currency": "USD",
     "specs": {
+      "architecture": "Raptor Lake Refresh",
       "socket": "LGA1700",
-      "generation": "Raptor Lake Refresh",
-      "tdpWatts": 253
+      "cores": 24,
+      "threads": 32,
+      "baseClock": 3200,
+      "boostClock": 6000,
+      "tdp": 253,
+      "cache": "36MB L3"
     },
     "priceHistory": [
       {
@@ -132,6 +142,148 @@
     ]
   },
   {
+    "id": "cpu_amd_ryzen5_5600",
+    "name": "AMD Ryzen 5 5600",
+    "category": "CPU",
+    "manufacturer": "AMD",
+    "releaseYear": 2022,
+    "originalMSRP": 199,
+    "fairValueScore": 129,
+    "marketPrice": 119,
+    "currency": "USD",
+    "specs": {
+      "architecture": "Zen 3",
+      "socket": "AM4",
+      "cores": 6,
+      "threads": 12,
+      "baseClock": 3500,
+      "boostClock": 4400,
+      "tdp": 65,
+      "cache": "32MB L3"
+    },
+    "priceHistory": [
+      {
+        "month": "2025-10",
+        "price": 139
+      },
+      {
+        "month": "2025-11",
+        "price": 136
+      },
+      {
+        "month": "2025-12",
+        "price": 133
+      },
+      {
+        "month": "2026-01",
+        "price": 130
+      },
+      {
+        "month": "2026-02",
+        "price": 128
+      },
+      {
+        "month": "2026-03",
+        "price": 126
+      },
+      {
+        "month": "2026-04",
+        "price": 124
+      },
+      {
+        "month": "2026-05",
+        "price": 123
+      },
+      {
+        "month": "2026-06",
+        "price": 122
+      },
+      {
+        "month": "2026-07",
+        "price": 121
+      },
+      {
+        "month": "2026-08",
+        "price": 120
+      },
+      {
+        "month": "2026-09",
+        "price": 119
+      }
+    ]
+  },
+  {
+    "id": "cpu_amd_ryzen9_9950x",
+    "name": "AMD Ryzen 9 9950X",
+    "category": "CPU",
+    "manufacturer": "AMD",
+    "releaseYear": 2024,
+    "originalMSRP": 649,
+    "fairValueScore": 599,
+    "marketPrice": 649,
+    "currency": "USD",
+    "specs": {
+      "architecture": "Zen 5",
+      "socket": "AM5",
+      "cores": 16,
+      "threads": 32,
+      "baseClock": 4300,
+      "boostClock": 5700,
+      "tdp": 170,
+      "cache": "64MB L3"
+    },
+    "priceHistory": [
+      {
+        "month": "2025-10",
+        "price": 569
+      },
+      {
+        "month": "2025-11",
+        "price": 575
+      },
+      {
+        "month": "2025-12",
+        "price": 582
+      },
+      {
+        "month": "2026-01",
+        "price": 590
+      },
+      {
+        "month": "2026-02",
+        "price": 598
+      },
+      {
+        "month": "2026-03",
+        "price": 605
+      },
+      {
+        "month": "2026-04",
+        "price": 612
+      },
+      {
+        "month": "2026-05",
+        "price": 618
+      },
+      {
+        "month": "2026-06",
+        "price": 625
+      },
+      {
+        "month": "2026-07",
+        "price": 633
+      },
+      {
+        "month": "2026-08",
+        "price": 641
+      },
+      {
+        "month": "2026-09",
+        "price": 649
+      }
+    ]
+  },
+  {
     "id": "gpu_nvidia_rtx_4070",
     "name": "NVIDIA GeForce RTX 4070",
     "category": "GPU",
@@ -142,9 +294,13 @@
     "marketPrice": 599,
     "currency": "USD",
     "specs": {
-      "socket": "PCIe 4.0 x16",
-      "generation": "Ada Lovelace",
-      "tdpWatts": 200
+      "architecture": "Ada Lovelace",
+      "vramCapacity": 12,
+      "vramType": "GDDR6X",
+      "coreClock": 1920,
+      "boostClock": 2475,
+      "computeUnits": 5888,
+      "tdp": 200
     },
     "priceHistory": [
       {
@@ -208,9 +364,13 @@
     "marketPrice": 461,
     "currency": "USD",
     "specs": {
-      "socket": "PCIe 4.0 x16",
-      "generation": "RDNA 3",
-      "tdpWatts": 263
+      "architecture": "RDNA 3",
+      "vramCapacity": 16,
+      "vramType": "GDDR6",
+      "coreClock": 1295,
+      "boostClock": 2430,
+      "computeUnits": 60,
+      "tdp": 263
     },
     "priceHistory": [
       {
@@ -264,72 +424,6 @@
     ]
   },
   {
-    "id": "cpu_amd_ryzen5_5600",
-    "name": "AMD Ryzen 5 5600",
-    "category": "CPU",
-    "manufacturer": "AMD",
-    "releaseYear": 2022,
-    "originalMSRP": 199,
-    "fairValueScore": 129,
-    "marketPrice": 119,
-    "currency": "USD",
-    "specs": {
-      "socket": "AM4",
-      "generation": "Zen 3",
-      "tdpWatts": 65
-    },
-    "priceHistory": [
-      {
-        "month": "2025-10",
-        "price": 139
-      },
-      {
-        "month": "2025-11",
-        "price": 136
-      },
-      {
-        "month": "2025-12",
-        "price": 133
-      },
-      {
-        "month": "2026-01",
-        "price": 130
-      },
-      {
-        "month": "2026-02",
-        "price": 128
-      },
-      {
-        "month": "2026-03",
-        "price": 126
-      },
-      {
-        "month": "2026-04",
-        "price": 124
-      },
-      {
-        "month": "2026-05",
-        "price": 123
-      },
-      {
-        "month": "2026-06",
-        "price": 122
-      },
-      {
-        "month": "2026-07",
-        "price": 121
-      },
-      {
-        "month": "2026-08",
-        "price": 120
-      },
-      {
-        "month": "2026-09",
-        "price": 119
-      }
-    ]
-  },
-  {
     "id": "gpu_nvidia_rtx_4090",
     "name": "NVIDIA GeForce RTX 4090",
     "category": "GPU",
@@ -340,9 +434,13 @@
     "marketPrice": 1899,
     "currency": "USD",
     "specs": {
-      "socket": "PCIe 4.0 x16",
-      "generation": "Ada Lovelace",
-      "tdpWatts": 450
+      "architecture": "Ada Lovelace",
+      "vramCapacity": 24,
+      "vramType": "GDDR6X",
+      "coreClock": 2235,
+      "boostClock": 2520,
+      "computeUnits": 16384,
+      "tdp": 450
     },
     "priceHistory": [
       {
@@ -406,9 +504,10 @@
     "marketPrice": 469,
     "currency": "USD",
     "specs": {
+      "chipset": "X670E",
       "socket": "AM5",
-      "generation": "X670E",
-      "tdpWatts": null
+      "formFactor": "ATX",
+      "memoryType": "DDR5"
     },
     "priceHistory": [
       {
@@ -462,68 +561,282 @@
     ]
   },
   {
-    "id": "cpu_amd_ryzen9_9950x",
-    "name": "AMD Ryzen 9 9950X",
-    "category": "CPU",
-    "manufacturer": "AMD",
+    "id": "mobo_msi_mag_x870e_tomahawk",
+    "name": "MSI MAG X870E TOMAHAWK WIFI",
+    "category": "MOBO",
+    "manufacturer": "MSI",
     "releaseYear": 2024,
-    "originalMSRP": 649,
-    "fairValueScore": 599,
-    "marketPrice": 649,
+    "originalMSRP": 379,
+    "fairValueScore": 369,
+    "marketPrice": 389,
     "currency": "USD",
     "specs": {
+      "chipset": "X870E",
       "socket": "AM5",
-      "generation": "Zen 5",
-      "tdpWatts": 170
+      "formFactor": "ATX",
+      "memoryType": "DDR5"
     },
     "priceHistory": [
       {
         "month": "2025-10",
-        "price": 569
+        "price": 352
       },
       {
         "month": "2025-11",
-        "price": 575
+        "price": 355
       },
       {
         "month": "2025-12",
-        "price": 582
+        "price": 358
       },
       {
         "month": "2026-01",
-        "price": 590
+        "price": 360
       },
       {
         "month": "2026-02",
-        "price": 598
+        "price": 361
       },
       {
         "month": "2026-03",
-        "price": 605
+        "price": 367
       },
       {
         "month": "2026-04",
-        "price": 612
+        "price": 375
       },
       {
         "month": "2026-05",
-        "price": 618
+        "price": 370
       },
       {
         "month": "2026-06",
-        "price": 625
+        "price": 375
       },
       {
         "month": "2026-07",
-        "price": 633
+        "price": 379
       },
       {
         "month": "2026-08",
-        "price": 641
+        "price": 385
       },
       {
         "month": "2026-09",
+        "price": 384
+      }
+    ]
+  },
+  {
+    "id": "ram_gskill_trident_z5_neo_32gb_ddr5_6000",
+    "name": "G.Skill Trident Z5 Neo 32GB DDR5-6000",
+    "category": "RAM",
+    "manufacturer": "G.Skill",
+    "releaseYear": 2023,
+    "originalMSRP": 149,
+    "fairValueScore": 121,
+    "marketPrice": 115,
+    "currency": "USD",
+    "specs": {
+      "capacity": 32,
+      "memoryType": "DDR5",
+      "speed": 6000,
+      "latency": "CL30",
+      "modules": "2x16GB"
+    },
+    "priceHistory": [
+      {
+        "month": "2025-10",
+        "price": 109
+      },
+      {
+        "month": "2025-11",
+        "price": 101
+      },
+      {
+        "month": "2025-12",
+        "price": 101
+      },
+      {
+        "month": "2026-01",
+        "price": 102
+      },
+      {
+        "month": "2026-02",
+        "price": 111
+      },
+      {
+        "month": "2026-03",
+        "price": 113
+      },
+      {
+        "month": "2026-04",
+        "price": 116
+      },
+      {
+        "month": "2026-05",
+        "price": 113
+      },
+      {
+        "month": "2026-06",
+        "price": 114
+      },
+      {
+        "month": "2026-07",
+        "price": 115
+      },
+      {
+        "month": "2026-08",
+        "price": 114
+      },
+      {
+        "month": "2026-09",
+        "price": 116
+      }
+    ]
+  },
+  {
+    "id": "gpu_amd_radeon_rx_9070_xt",
+    "name": "AMD Radeon RX 9070 XT",
+    "category": "GPU",
+    "manufacturer": "AMD",
+    "releaseYear": 2025,
+    "originalMSRP": 649,
+    "fairValueScore": 629,
+    "marketPrice": 699,
+    "currency": "USD",
+    "specs": {
+      "architecture": "RDNA 4",
+      "codename": "Navi 48",
+      "bus": "PCIe 5.0 x16",
+      "vramCapacity": 16,
+      "vramType": "GDDR6",
+      "memoryBusWidth": 256,
+      "memoryClock": 2518,
+      "boostClock": 2970,
+      "computeUnits": 64,
+      "shadingUnits": 4096,
+      "tmus": 256,
+      "rops": 128,
+      "tdp": 304
+    },
+    "priceHistory": [
+      {
+        "month": "2025-10",
+        "price": 627
+      },
+      {
+        "month": "2025-11",
+        "price": 640
+      },
+      {
+        "month": "2025-12",
+        "price": 643
+      },
+      {
+        "month": "2026-01",
         "price": 649
+      },
+      {
+        "month": "2026-02",
+        "price": 650
+      },
+      {
+        "month": "2026-03",
+        "price": 665
+      },
+      {
+        "month": "2026-04",
+        "price": 666
+      },
+      {
+        "month": "2026-05",
+        "price": 669
+      },
+      {
+        "month": "2026-06",
+        "price": 682
+      },
+      {
+        "month": "2026-07",
+        "price": 682
+      },
+      {
+        "month": "2026-08",
+        "price": 693
+      },
+      {
+        "month": "2026-09",
+        "price": 694
+      }
+    ]
+  },
+  {
+    "id": "storage_samsung_990_pro_2tb",
+    "name": "Samsung 990 PRO 2TB",
+    "category": "STORAGE",
+    "manufacturer": "Samsung",
+    "releaseYear": 2022,
+    "originalMSRP": 289,
+    "fairValueScore": 178,
+    "marketPrice": 169,
+    "currency": "USD",
+    "specs": {
+      "type": "NVMe",
+      "capacity": 2048,
+      "formFactor": "M.2 2280",
+      "interface": "PCIe 4.0 x4",
+      "readSpeed": 7450,
+      "writeSpeed": 6900
+    },
+    "priceHistory": [
+      {
+        "month": "2025-10",
+        "price": 149
+      },
+      {
+        "month": "2025-11",
+        "price": 155
+      },
+      {
+        "month": "2025-12",
+        "price": 156
+      },
+      {
+        "month": "2026-01",
+        "price": 152
+      },
+      {
+        "month": "2026-02",
+        "price": 162
+      },
+      {
+        "month": "2026-03",
+        "price": 158
+      },
+      {
+        "month": "2026-04",
+        "price": 164
+      },
+      {
+        "month": "2026-05",
+        "price": 160
+      },
+      {
+        "month": "2026-06",
+        "price": 165
+      },
+      {
+        "month": "2026-07",
+        "price": 170
+      },
+      {
+        "month": "2026-08",
+        "price": 169
+      },
+      {
+        "month": "2026-09",
+        "price": 165
       }
     ]
   }

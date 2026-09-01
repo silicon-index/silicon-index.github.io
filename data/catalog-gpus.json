@@ -1,19 +1,24 @@
 [
   { "name": "RIVA TNT2", "category": "graphics card", "manufacturer": "NVIDIA", "releaseYear": 1999,
-    "originalMSRP": 179, "currency": "USD", "specs": { "vramGb": 0.032, "vramType": "SDR", "generation": "TNT2" } },
+    "originalMSRP": 179, "currency": "USD",
+    "specs": { "architecture": "TNT2", "vramCapacity": 0.032, "vramType": "SDR", "coreClock": 175 } },
   { "name": "GeForce 8800 GTX", "category": "GPU", "manufacturer": "NVIDIA", "releaseYear": 2006,
-    "originalMSRP": 599, "currency": "USD", "specs": { "vramGb": 0.768, "cudaCores": 128, "tdpWatts": 155 } },
+    "originalMSRP": 599, "currency": "USD",
+    "specs": { "architecture": "Tesla", "vramCapacity": 0.768, "vramType": "GDDR3", "computeUnits": 128, "tdp": 155 } },
   { "name": "Radeon HD 5870", "category": "video card", "manufacturer": "AMD", "releaseYear": 2009,
-    "originalMSRP": 379, "currency": "USD", "specs": { "vramGb": 1, "streamProcessors": 1600 } },
+    "originalMSRP": 379, "currency": "USD",
+    "specs": { "architecture": "TeraScale 2", "vramCapacity": 1, "vramType": "GDDR5", "computeUnits": 1600, "tdp": 188 } },
 
   { "name": "Voodoo 2", "category": "3dfx accelerator", "manufacturer": "3dfx", "releaseYear": 1998,
-    "originalMSRP": 299, "currency": "USD", "specs": {} },
+    "originalMSRP": 299, "currency": "USD", "specs": { "architecture": "Voodoo", "vramCapacity": 0.012 } },
   { "name": "Mystery Card", "category": "GPU", "manufacturer": "", "releaseYear": 2021,
-    "originalMSRP": 100, "currency": "USD", "specs": {} },
+    "originalMSRP": 100, "currency": "USD", "specs": { "architecture": "?", "vramCapacity": 8 } },
   { "name": "Time Traveller", "category": "GPU", "manufacturer": "Acme", "releaseYear": 1974,
-    "originalMSRP": 50, "currency": "USD", "specs": {} },
+    "originalMSRP": 50, "currency": "USD", "specs": { "architecture": "X", "vramCapacity": 1 } },
   { "name": "Nested Junk", "category": "GPU", "manufacturer": "Acme", "releaseYear": 2020,
-    "originalMSRP": 50, "currency": "USD", "specs": { "seller": { "name": "Bob" } } },
+    "originalMSRP": 50, "currency": "USD", "specs": { "architecture": "X", "vramCapacity": 1, "vramType": { "n": "Bob" } } },
+  { "name": "Wrong Field", "category": "GPU", "manufacturer": "Acme", "releaseYear": 2020,
+    "originalMSRP": 50, "currency": "USD", "specs": { "architecture": "X", "vramCapacity": 1, "socket": "AM5" } },
   { "name": "GeForce 8800 GTX", "category": "GPU", "manufacturer": "NVIDIA", "releaseYear": 2006,
-    "originalMSRP": 599, "currency": "USD", "specs": {} }
+    "originalMSRP": 599, "currency": "USD", "specs": { "architecture": "Tesla", "vramCapacity": 0.768 } }
 ]

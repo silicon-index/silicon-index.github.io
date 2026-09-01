@@ -15,6 +15,9 @@
 import {
   CATALOG_CONSTRAINTS,
   CATEGORY_ALIASES,
+  REQUIRED_SPEC_FIELDS,
+  SPEC_FIELDS,
+  STORAGE_TYPES,
   type CatalogComponent,
   type ComponentCategory,
   type IngestionReport,
@@ -168,6 +171,50 @@ function numberOrNull(raw: unknown): number | null {
 }
 
 /**
+ * Validates a spec bag against its category's contract.
+ *
+ * Unknown keys are REJECTED rather than dropped: an unexpected spec column in
+ * a bulk file almost always means a mapping error, and silently discarding it
+ * is how bad source data goes unnoticed. Adding a genuinely new attribute is a
+ * deliberate one-line change to `SPEC_FIELDS` and the matching interface.
+ */
+export function validateSpecs(specs: Record<string, unknown>, rawCategory: unknown): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  const category = typeof rawCategory === "string" ? (rawCategory as ComponentCategory) : null;
+  const allowed = category && SPEC_FIELDS[category] ? SPEC_FIELDS[category] : null;
+
+  for (const [key, value] of Object.entries(specs)) {
+    const type = typeof value;
+    if (value !== null && type !== "string" && type !== "number" && type !== "boolean") {
+      issues.push({ field: `specs.${key}`, message: "Spec values must be string, number, boolean, or null." });
+      continue;
+    }
+    if (allowed && !allowed.includes(key)) {
+      issues.push({
+        field: `specs.${key}`,
+        message: `Not a ${category} spec. Allowed: ${allowed.join(", ")}.`
+      });
+    }
+  }
+
+  if (allowed && category) {
+    for (const required of REQUIRED_SPEC_FIELDS[category]) {
+      const value = specs[required];
+      if (value === undefined || value === null || value === "") {
+        issues.push({ field: `specs.${required}`, message: `Required for ${category}.` });
+      }
+    }
+  }
+
+  // The only closed-value spec field.
+  if (category === "STORAGE" && specs.type !== undefined && !STORAGE_TYPES.includes(specs.type as never)) {
+    issues.push({ field: "specs.type", message: `Must be one of: ${STORAGE_TYPES.join(", ")}.` });
+  }
+
+  return issues;
+}
+
+/**
  * Validates one already-shaped candidate against `CATALOG_CONSTRAINTS`.
  * Collects every issue rather than failing on the first, so an operator can
  * fix a source row in one pass.
@@ -212,12 +259,7 @@ export function validateCatalogComponent(candidate: unknown, now: Date = new Dat
       if (typeof value !== "object" || Array.isArray(value)) {
         issues.push({ field: constraint.field, message: "Must be an object." });
       } else {
-        for (const [key, specValue] of Object.entries(value as Record<string, unknown>)) {
-          const type = typeof specValue;
-          if (specValue !== null && type !== "string" && type !== "number" && type !== "boolean") {
-            issues.push({ field: `specs.${key}`, message: "Spec values must be string, number, boolean, or null." });
-          }
-        }
+        issues.push(...validateSpecs(value as Record<string, unknown>, record.category));
       }
     }
   }

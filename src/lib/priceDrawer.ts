@@ -7,7 +7,8 @@
  * `openPriceDrawer(component)`.
  */
 
-import { specsAs, type CpuSpecs, type HardwareComponent } from "@modules/database/contracts";
+import type { HardwareComponent } from "@modules/database/contracts";
+import { CATEGORY_LABELS, specChips } from "./specDisplay";
 import { createPriceChart, type PriceChartHandle } from "./priceChart";
 import { formatPrice } from "./format";
 
@@ -60,17 +61,16 @@ export function openPriceDrawer(component: HardwareComponent): void {
   els.sku.textContent = component.sku;
 
   const overMedian = component.medianMarketPrice > component.fairValueScore;
-  const specs = specsAs<CpuSpecs>(component);
-  const spec = [specs.socket, specs.generation].filter(Boolean).join(" · ");
-
   els.stats.innerHTML = [
     statChip("Median market", formatPrice(component.medianMarketPrice, component.currency), overMedian),
     // Historical parts may have no documented launch price.
     statChip("MSRP", component.originalMSRP === null ? "—" : formatPrice(component.originalMSRP, component.currency)),
     statChip("Fair value", formatPrice(component.fairValueScore, component.currency)),
+    statChip("Category", CATEGORY_LABELS[component.category]),
     statChip("Manufacturer", component.manufacturer),
-    ...(spec ? [statChip("Spec", spec)] : []),
-    ...(specs.tdpWatts ? [statChip("TDP", `${specs.tdpWatts}W`)] : [])
+    statChip("Released", String(component.releaseYear)),
+    // Category-specific; absent fields are omitted, not shown as blanks.
+    ...specChips(component).map((chip) => statChip(chip.label, chip.value))
   ].join("");
 
   // Reveal before measuring: a hidden element has zero width.

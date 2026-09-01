@@ -24,6 +24,11 @@
     </div>
 
     <div class="filter-group">
+      <label for="filter-memory">Memory Type</label>
+      <select id="filter-memory"><option value="">All memory types</option></select>
+    </div>
+
+    <div class="filter-group">
       <label for="filter-year">Release Year</label>
       <select id="filter-year"><option value="">All years</option></select>
     </div>
@@ -63,7 +68,7 @@
           <thead>
             <tr>
               <th scope="col">Component</th>
-              <th scope="col">Socket / Gen</th>
+              <th scope="col">Key Specs</th>
               <th scope="col" class="col-num">Fair Value Score</th>
               <th scope="col" class="col-num">Market Price</th>
               <th scope="col">Status</th>
@@ -83,8 +88,8 @@
 
 <script>
   import { fetchMarketData } from "@/services/dataService";
-  import type { CpuSpecs, HardwareComponent } from "@modules/database/contracts";
-  import { specsAs } from "@modules/database/contracts";
+  import type { HardwareComponent } from "@modules/database/contracts";
+  import { CATEGORY_LABELS, memoryTypeOf, socketOf, specSummary } from "@/lib/specDisplay";
   import { formatPrice, escapeHtml } from "@/lib/format";
   import { openPriceDrawer } from "@/lib/priceDrawer";
 
@@ -93,12 +98,13 @@
     search: string;
     category: string;
     socket: string;
+    memoryType: string;
     year: string;
     scalpedOnly: boolean;
     sort: string;
   }
 
-  const state: State = { all: [], search: "", category: "", socket: "", year: "", scalpedOnly: false, sort: "price-desc" };
+  const state: State = { all: [], search: "", category: "", socket: "", memoryType: "", year: "", scalpedOnly: false, sort: "price-desc" };
 
   const els = {
     tableBody: document.getElementById("table-body") as HTMLTableSectionElement,
@@ -107,22 +113,13 @@
     search: document.getElementById("filter-search") as HTMLInputElement,
     category: document.getElementById("filter-category") as HTMLSelectElement,
     socket: document.getElementById("filter-socket") as HTMLSelectElement,
+    memoryType: document.getElementById("filter-memory") as HTMLSelectElement,
     year: document.getElementById("filter-year") as HTMLSelectElement,
     scalped: document.getElementById("filter-scalped") as HTMLInputElement,
     sort: document.getElementById("sort-select") as HTMLSelectElement,
     reset: document.getElementById("filter-reset") as HTMLButtonElement,
     sourceBadge: document.getElementById("data-source-badge")
   };
-
-  /** Socket moved into the open `specs` bag when the base template landed. */
-  function socketOf(item: HardwareComponent): string | undefined {
-    return specsAs<CpuSpecs>(item).socket;
-  }
-
-  function specLabel(item: HardwareComponent): string {
-    const specs = specsAs<CpuSpecs>(item);
-    return [specs.socket, specs.generation].filter(Boolean).join(" · ") || "—";
-  }
 
   function isScalped(item: HardwareComponent): boolean {
     return item.medianMarketPrice > item.fairValueScore;
@@ -134,7 +131,8 @@
 
   function populateFilterOptions(data: HardwareComponent[]): void {
     fillSelect(els.category, uniqueSorted(data.map((d) => d.category)));
-    fillSelect(els.socket, uniqueSorted(data.map((d) => socketOf(d)).filter((v): v is string => !!v)));
+    fillSelect(els.socket, uniqueSorted(data.map(socketOf).filter((v): v is string => !!v)));
+    fillSelect(els.memoryType, uniqueSorted(data.map(memoryTypeOf).filter((v): v is string => !!v)));
     fillSelect(
       els.year,
       uniqueSorted(data.map((d) => d.releaseYear)).sort((a, b) => Number(b) - Number(a))
@@ -155,6 +153,7 @@
       if (state.search && item.name.toLowerCase().indexOf(state.search) === -1) return false;
       if (state.category && item.category !== state.category) return false;
       if (state.socket && socketOf(item) !== state.socket) return false;
+      if (state.memoryType && memoryTypeOf(item) !== state.memoryType) return false;
       if (state.year && String(item.releaseYear) !== state.year) return false;
       if (state.scalpedOnly && !isScalped(item)) return false;
       return true;
@@ -221,8 +220,8 @@
     return (
       `<tr data-id="${escapeHtml(item.sku)}" data-row-clickable tabindex="0" role="button" aria-label="Show price history for ${escapeHtml(item.name)}">` +
       `<td><span class="component-name">${escapeHtml(item.name)}</span>` +
-      `<span class="component-category">${escapeHtml(item.category)}</span></td>` +
-      `<td><span class="spec-meta">${escapeHtml(specLabel(item))}</span> ` +
+      `<span class="component-category">${escapeHtml(CATEGORY_LABELS[item.category])}</span></td>` +
+      `<td><span class="spec-meta">${escapeHtml(specSummary(item))}</span> ` +
       `<span class="spec-year">(${item.releaseYear})</span></td>` +
       `<td class="num-cell fair-value">${formatPrice(item.fairValueScore, item.currency)}</td>` +
       `<td class="num-cell market-price ${priceClass}">${formatPrice(item.medianMarketPrice, item.currency)}</td>` +
@@ -235,12 +234,13 @@
     els.search.addEventListener("input", (e) => { state.search = (e.target as HTMLInputElement).value.trim().toLowerCase(); render(); });
     els.category.addEventListener("change", (e) => { state.category = (e.target as HTMLSelectElement).value; render(); });
     els.socket.addEventListener("change", (e) => { state.socket = (e.target as HTMLSelectElement).value; render(); });
+    els.memoryType.addEventListener("change", (e) => { state.memoryType = (e.target as HTMLSelectElement).value; render(); });
     els.year.addEventListener("change", (e) => { state.year = (e.target as HTMLSelectElement).value; render(); });
     els.scalped.addEventListener("change", (e) => { state.scalpedOnly = (e.target as HTMLInputElement).checked; render(); });
     els.sort.addEventListener("change", (e) => { state.sort = (e.target as HTMLSelectElement).value; render(); });
     els.reset.addEventListener("click", () => {
-      state.search = ""; state.category = ""; state.socket = ""; state.year = ""; state.scalpedOnly = false; state.sort = "price-desc";
-      els.search.value = ""; els.category.value = ""; els.socket.value = ""; els.year.value = ""; els.scalped.checked = false; els.sort.value = "price-desc";
+      state.search = ""; state.category = ""; state.socket = ""; state.memoryType = ""; state.year = ""; state.scalpedOnly = false; state.sort = "price-desc";
+      els.search.value = ""; els.category.value = ""; els.socket.value = ""; els.memoryType.value = ""; els.year.value = ""; els.scalped.checked = false; els.sort.value = "price-desc";
       render();
     });
   }

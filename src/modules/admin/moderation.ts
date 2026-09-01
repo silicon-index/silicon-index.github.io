@@ -14,7 +14,7 @@ import { evaluateAutoAccept } from "../ai/engine";
 import { readStaged, writeStaged } from "../../services/dataService";
 import type { AutoAcceptDecision } from "../ai/contracts";
 import type { HardwareComponent } from "../database/contracts";
-import type { PriceSubmission } from "../contributors/contracts";
+import type { PriceSubmission, SubmissionBase } from "../contributors/contracts";
 import { DENIAL_REASONS, type DenialReason, type SubmissionStatus } from "./contracts";
 
 export { DENIAL_REASONS };
@@ -41,11 +41,22 @@ export function getReviewed(): PriceSubmission[] {
     .sort((a, b) => new Date(b.reviewedAt ?? 0).getTime() - new Date(a.reviewedAt ?? 0).getTime());
 }
 
-function update(submissionId: string, patch: Partial<PriceSubmission>): PriceSubmission | null {
+/**
+ * Applies a patch while preserving the union member.
+ *
+ * The patch is typed `Partial<SubmissionBase>`, so it cannot touch `category`
+ * or `specs` — which is what makes this safe without a cast: `Object.assign`
+ * yields `S & Partial<SubmissionBase>`, still assignable to `S`.
+ */
+function withPatch<S extends PriceSubmission>(item: S, patch: Partial<SubmissionBase>): S {
+  return Object.assign({}, item, patch);
+}
+
+function update(submissionId: string, patch: Partial<SubmissionBase>): PriceSubmission | null {
   const all = readStaged();
   const index = all.findIndex((s) => s.submissionId === submissionId);
   if (index === -1) return null;
-  all[index] = { ...all[index], ...patch, reviewedAt: new Date().toISOString() };
+  all[index] = withPatch(all[index], { ...patch, reviewedAt: new Date().toISOString() });
   writeStaged(all);
   return all[index];
 }
@@ -109,13 +120,12 @@ export function runAutoAcceptEngine(components: HardwareComponent[]): AutoAccept
     const decision = evaluateAutoAccept(submission, components);
 
     if (decision.accept) {
-      all[index] = {
-        ...submission,
+      all[index] = withPatch(submission, {
         status: "approved",
         autoAccepted: true,
         decisionNote: `Auto-accepted: ${decision.reason}`,
         reviewedAt: new Date().toISOString()
-      };
+      });
       result.approved.push(all[index]);
       mutated = true;
     } else {

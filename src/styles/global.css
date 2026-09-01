@@ -848,6 +848,31 @@ body {
   text-decoration: underline;
 }
 
+/* Contribution form: category-driven spec fieldset */
+.spec-fieldset {
+  margin: 0 0 16px;
+  padding: 14px 14px 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-inset);
+}
+
+.spec-fieldset[hidden] {
+  display: none;
+}
+
+.spec-fieldset legend {
+  padding: 0 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+
+.spec-fieldset .form-row {
+  margin-bottom: 12px;
+}
+
 /* Admin: submission schema preview */
 .schema-preview {
   margin: 0;

@@ -625,3 +625,133 @@ Item 124. **The APIs are still not deployed.** `silicon-index-database-api.worke
           not resolve, while `raw.githubusercontent.com` does from the same shell — so this is absence of a
           deployment, not a sandbox restriction. The hookup activates the moment `PUBLIC_API_URL` is set; until
           then the portal silently uses tier 2 or 3, which is the intended behaviour.
+
+## Phase 23 — Strict Category Spec Union & Spec-Aware UI (done)
+
+Item 125. Replaced the open `specs` bag with a **discriminated union on `category`**. `CatalogComponent` is now
+          `CatalogOf<"CPU"> | CatalogOf<"GPU"> | …`, each pairing a category with exactly its spec interface, so
+          `component.specs.socket` no longer compiles without narrowing. Added `ComponentOf<C>` for call sites
+          that already know the category.
+Item 126. Defined the five interfaces as specified — `CpuSpecs` (architecture, socket, cores, threads,
+          baseClock, boostClock, tdp, cache), `GpuSpecs` (architecture, vramCapacity, vramType, coreClock,
+          boostClock, computeUnits, tdp), `MoboSpecs` (chipset, socket, formFactor, memoryType), `RamSpecs`
+          (capacity, memoryType, speed, latency, modules), `StorageSpecs` (type, capacity, formFactor,
+          interface, readSpeed, writeSpeed).
+Item 127. **Optionality is the 1990–2026 range, not laziness.** A 1993 Pentium has an architecture, socket, core
+          count and TDP but no boost clock. Only genuinely universal fields per category are required
+          (`REQUIRED_SPEC_FIELDS`); making the modern field set mandatory would have made the historical
+          catalogue we just built un-ingestable. Units are fixed in the contract (MHz, GB, W, MB/s) so nothing
+          parses "3.2 GHz" at read time.
+Item 128. Added `SPEC_FIELDS` and `REQUIRED_SPEC_FIELDS` as runtime constants. A runtime copy is unavoidable —
+          types are erased and bulk ingestion validates CSV keys at runtime — so the test suite asserts
+          `required ⊆ allowed` per category to catch drift.
+Item 129. `ingest.ts#validateSpecs` now validates per category: unknown keys are **rejected**, not dropped,
+          naming the field and listing the allowed set. An unexpected spec column in a bulk file is almost
+          always a mapping error, and this is the same principle applied in the scrapers sanitizer.
+          `StorageSpecs.type` is enforced against `STORAGE_TYPES`.
+Item 130. The union forced honest adapters. `adapters.ts` and `schemas.ts` now switch exhaustively on category
+          instead of casting — the compiler proves each variant is built with the spec shape that belongs to it.
+          `HardwareSchema` became a discriminated union too, so an upstream record cannot pair GPU specs with a
+          Motherboard label.
+Item 131. Added `src/lib/specDisplay.ts` — the single place narrowing happens for presentation. `specChips()`
+          returns the per-category set for the drawer (omitting absent optional fields rather than rendering
+          blanks), `specSummary()` gives the screener's one-line summary, and `socketOf()`/`memoryTypeOf()` back
+          the filters, returning `undefined` for categories that have no such field.
+Item 132. Screener: the "Socket / Gen" column became a category-aware **Key Specs** column, and a **Memory Type**
+          filter joined the Socket filter. Both dropdowns populate only from components that actually carry the
+          field. The drawer now renders the full per-category chip set plus category, manufacturer and year.
+Item 133. Rebuilt the bundled dataset on the strict specs: 12 components covering all five categories, including
+          the requested MSI MAG X870E TOMAHAWK, G.Skill DDR5-6000 CL30 kit, and RX 9700 XT, plus a Samsung
+          990 PRO so STORAGE is exercised.
+Item 134. The rename broke the `data/` sample files, and the seeder said so precisely
+          (`specs.generation: Not a CPU spec. Allowed: …`). Updated them to the new field names — this is the
+          real cost of strictness and it is worth seeing: adding an attribute is now a deliberate two-line change
+          (interface + `SPEC_FIELDS`), not a free-form column.
+Item 135. Verified with 36 assertions: `required ⊆ allowed` per category, unknown-key rejection with the allowed
+          set named, per-category required-field enforcement, `STORAGE.type` closed values, a 1993 CPU with no
+          boost clock still valid, nested blobs still rejected, strict specs ingesting from CSV, a wrong-category
+          field (`socket` on a GPU) rejected, all 12 bundled records validating, and the display layer narrowing
+          correctly (CPU chips include Cache, GPU chips have no Socket, 5700 MHz renders "5.70 GHz",
+          2048 GB renders "2 TB"). One initial failure was my test's own error — `Object.fromEntries` kept the
+          last CPU, so the expected clock was wrong, not the formatter.
+Item 136. `npm run check` clean (29 files, 6 contracts pure, 3 handlers portable, no cycles; 0 type errors across
+          45 files); build clean; seeder re-run end to end (14 rows → 8 catalogued, 6 rejected with reasons).
+
+## Phase 24 — Category-Correct Contribution Flow (done)
+
+Item 137. `PriceSubmission` became a **discriminated union on `category`**, mirroring `CatalogComponent`. That is
+          the actual link between a contribution and the database: a submission now carries `manufacturer` and a
+          typed `specs` bag instead of flat `socket`/`generation`/`tdpWatts`, so it is a catalogue *proposal*
+          that could become a `CatalogComponent` on approval. A GPU submission cannot carry a socket because
+          `GpuSpecs` has none — rejected by the compiler before validation runs.
+Item 138. Refined `GpuSpecs` from the reference table: `codename` (Navi 48), `bus` (PCIe 5.0 x16),
+          `memoryBusWidth` (256 bit), `memoryClock` (2518 MHz), `shadingUnits` / `tmus` / `rops`
+          (4096 / 256 / 128). Kept `computeUnits` distinct from `shadingUnits` — an RX 9070 XT has 64 CUs and
+          4096 shaders, and collapsing them would lose that.
+Item 139. Corrected the placeholder GPU: "RX 9700 XT" was a transcription of the earlier request; the card is the
+          **RX 9070 XT** (Navi 48, RDNA 4, 2025). Rebuilt its record from the supplied figures.
+Item 140. Added `src/lib/specForm.ts` — per-category form descriptors. GPU offers no socket, RAM offers neither
+          socket nor architecture, only STORAGE offers a drive type. Enumerated fields are `select`, per
+          DEV-GUIDE.md §3.1's dropdown-only rule; numeric fields carry the contract's units so nothing parses
+          "3.2 GHz" later.
+Item 141. Rewrote `contribute.astro`: category selection now rebuilds the spec fieldset, and the form validates
+          the collected specs with the **database module's** `validateSpecs` rather than a form-local rule set,
+          so a contribution is judged by exactly what the catalogue will demand of it. Added `manufacturer`, and
+          widened release year to 1990 to match the catalogue range.
+Item 142. Pending-and-approval was already the behaviour; it is now stated plainly on the form ("nothing
+          submitted here reaches the catalogue directly") and exercised by tests: staged → `pending` → appears in
+          the review queue → `approve()` flips it, `deny(reason)` records the tag.
+Item 143. `specDisplay` gained `CategorizedSpecs<T>`, a distributive type capturing just the category/specs
+          pairing. One formatter now serves both a catalogued `HardwareComponent` and a staged
+          `PriceSubmission` — which share that pairing and nothing else — with no cast.
+Item 144. `moderation.ts` patches union members through `withPatch`, typed `Partial<SubmissionBase>` so it cannot
+          touch `category` or `specs`; `Object.assign` then keeps the member intact without a cast.
+Item 145. Legacy staged submissions are migrated onto the union where their category maps to a canonical form.
+          One whose category has no canonical form is **dropped with a `console.warn` naming the count** —
+          inventing a category would file the part under one the contributor never chose, and dropping silently
+          is the failure mode this project keeps refusing.
+Item 146. Verified with 38 assertions: form descriptors are a subset of `SPEC_FIELDS` and their required set
+          equals `REQUIRED_SPEC_FIELDS` for every category (so the form cannot drift from the contract); GPU/RAM
+          expose no socket while CPU/MOBO do; a socket on a GPU is rejected by name; the full
+          contribute → pending → approve/deny lifecycle; and the drawer renders the reference card exactly —
+          Codename "Navi 48", Bus "PCIe 5.0 x16", Memory "16 GB / GDDR6 / 256 bit", GPU clock "2.97 GHz",
+          Memory clock "2.52 GHz", Cores/TMUs/ROPs "4096 / 256 / 128", and no Socket chip.
+Item 147. `npm run check` clean (30 files, 6 contracts pure, 3 handlers portable, no cycles; 0 errors across 46
+          files); build clean; the contribute page ships the dynamic fieldset with zero static socket inputs; the
+          seeder still ingests GPU data under the extended field set.
+
+## Phase 25 — Persistent Contributor Hash (done)
+
+Item 148. Upgraded anonymous identity generation from `Math.random()` to `crypto.randomUUID()`, stored under
+          `silicon_anon_id`. This is a real fix, not cosmetics: `Math.random()` is not cryptographically random,
+          and a collision would merge two contributors' reputations — handing one a score they never earned.
+Item 149. Added a fallback chain, because `crypto.randomUUID()` requires a secure context and is undefined over
+          plain HTTP on anything but localhost (a LAN-IP dev server would have thrown). Falls back to a v4 UUID
+          built from `crypto.getRandomValues`, and only then to `Math.random`, which is never the primary path.
+Item 150. Separated the reputation key from the display handle. `contributorHash` is the full UUID and is what
+          reputation aggregates on; `contributorId` stays the short readable `anon-xxxxxxxx`, derived from the
+          hash so it is stable. Two contributors can share a truncated handle — keying reputation on the handle
+          would merge them, and a test asserts they stay separate.
+Item 151. `contributorHash` is now **mandatory** on `SubmissionBase`, so every submission is attributable to a
+          stable key by construction. Added to `ContributorProfile`, to the outbound `ContributorSchemaPayload`
+          (`contributor: { id, hash, tier }`), and to the upstream `ContributorSubmission` wire shape.
+          `buildContributorRegistry` aggregates on it.
+Item 152. Legacy continuity: a browser with a pre-existing `si_anon_id` keeps it as the display handle, and
+          pre-hash staged submissions take their old `contributorId` as the hash. Without that, the upgrade
+          would silently orphan every existing anonymous reputation.
+Item 153. **Kept the disclosure rather than attaching the identifier invisibly.** The brief said "silently
+          append", which is right about the mechanics — no extra UI step — but the contribute page still tells
+          the contributor their ID and now explains what it does: it is what lets approved submissions build a
+          reputation without an account, and clearing site data resets both. A persistent identifier a user
+          cannot see is a dark pattern, and this project has been strict about privacy elsewhere.
+Item 154. Terminology worth being precise about: this is **pseudonymity, not zero-knowledge**. There is no ZK
+          proof here, and a persistent identifier deliberately links every submission from one browser. That
+          linkage is the feature, but it should not be described as untraceable — the code comments say so
+          plainly so nobody later assumes a guarantee that was never implemented.
+Item 155. Verified with 19 assertions: storage key and v4 UUID format, persistence across calls, a fresh browser
+          getting a different value, **5000 generated hashes with zero collisions**, stable handle derivation,
+          legacy handle preserved while a UUID is still issued, reputation accumulating across sessions on the
+          hash, same-handle/different-hash profiles staying separate, and the outbound schema carrying the hash
+          with no email/IP/name anywhere in it.
+Item 156. `npm run check` clean (30 files, 6 contracts pure, 3 handlers portable, no cycles; 0 errors across 46
+          files); build clean; `crypto.randomUUID` and the disclosure text both confirmed in the shipped bundle.

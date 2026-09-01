@@ -1,5 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { COMPONENT_CATEGORIES } from "../modules/database/contracts";
+import { CATEGORY_LABELS } from "../lib/specDisplay";
 ---
 <BaseLayout title="Contribute" activeNav="contribute">
   <div class="layout layout--form px-4">
@@ -7,10 +9,16 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <section class="form-panel" aria-labelledby="contribute-heading">
         <h1 id="contribute-heading">Submit a Market Price</h1>
         <p class="form-intro">
-          Anonymous submissions are welcome. Every entry starts as <strong>Pending Validation</strong> and is
-          reviewed in the <a href="/admin">Admin Panel</a> before it counts toward the index. Per
-          <a href="/DEV-GUIDE.md">DEV-GUIDE.md</a>'s strict whitelist rule, only normalized spec fields and a
-          numeric price are accepted — no seller names, locations, or free-text descriptions.
+          Anonymous submissions are welcome. Every entry is staged as
+          <strong>Pending Validation</strong> and must be approved in the
+          <a href="/admin">Admin Panel</a> before it counts toward the index — nothing submitted here reaches the
+          catalogue directly.
+        </p>
+        <p class="form-intro">
+          Spec fields change with the category, because the catalogue contract does: a GPU is a card on a bus and
+          has no socket; a memory kit has neither socket nor architecture. Per
+          <a href="/DEV-GUIDE.md">DEV-GUIDE.md</a>'s whitelist rule, spec inputs are dropdowns and numbers — no
+          free-text descriptions, no seller details.
         </p>
 
         <p id="contribute-signed-in" class="form-note" hidden></p>
@@ -18,46 +26,38 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <form id="contribute-form" novalidate>
           <div class="form-row">
             <label for="f-name">Component name</label>
-            <input type="text" id="f-name" name="componentName" required maxlength="80" placeholder="e.g. AMD Ryzen 7 7800X3D" />
+            <input type="text" id="f-name" name="componentName" required maxlength="80" placeholder="e.g. Radeon RX 9070 XT" />
           </div>
 
           <div class="form-row form-row--split">
             <div>
-              <label for="f-category">Category</label>
-              <select id="f-category" name="category" required>
-                <option value="">Select…</option>
-                <option>CPU</option><option>GPU</option><option>Motherboard</option>
-                <option>Memory</option><option>Storage</option><option>Power Supply</option>
-              </select>
-            </div>
-            <div>
-              <label for="f-socket">Socket</label>
-              <select id="f-socket" name="socket" required>
-                <option value="">Select…</option>
-                <option>AM5</option><option>AM4</option><option>LGA1700</option><option>LGA1851</option><option>N/A</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row form-row--split">
-            <div>
-              <label for="f-generation">Generation</label>
-              <select id="f-generation" name="generation" required>
-                <option value="">Select…</option>
-                <option>Zen 4</option><option>Zen 5</option><option>Raptor Lake Refresh</option>
-                <option>Arrow Lake</option><option>Ada Lovelace</option><option>Blackwell</option><option>Other</option>
-              </select>
+              <label for="f-manufacturer">Manufacturer</label>
+              <input type="text" id="f-manufacturer" name="manufacturer" required maxlength="40" placeholder="AMD" />
             </div>
             <div>
               <label for="f-year">Release year</label>
-              <input type="number" id="f-year" name="releaseYear" required min="2000" max="2030" step="1" placeholder="2023" />
+              <input type="number" id="f-year" name="releaseYear" required min="1990" max="2030" step="1" placeholder="2025" />
             </div>
           </div>
+
+          <div class="form-row">
+            <label for="f-category">Category</label>
+            <select id="f-category" name="category" required>
+              <option value="">Select…</option>
+              {COMPONENT_CATEGORIES.map((c) => <option value={c}>{CATEGORY_LABELS[c]}</option>)}
+            </select>
+          </div>
+
+          <fieldset id="spec-fieldset" class="spec-fieldset" hidden>
+            <legend id="spec-legend">Specifications</legend>
+            <p class="field-hint" id="spec-hint"></p>
+            <div id="spec-fields"></div>
+          </fieldset>
 
           <div class="form-row form-row--split">
             <div>
               <label for="f-price">Observed price (numeric only)</label>
-              <input type="number" id="f-price" name="observedPrice" required min="0" step="0.01" placeholder="449.00" />
+              <input type="number" id="f-price" name="reportedPrice" required min="0" step="0.01" placeholder="699.00" />
             </div>
             <div>
               <label for="f-currency">Currency</label>
@@ -65,11 +65,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
                 <option value="USD">USD</option><option value="EUR">EUR</option><option value="RON">RON</option>
               </select>
             </div>
-          </div>
-
-          <div class="form-row">
-            <label for="f-tdp">TDP (watts, numeric only)</label>
-            <input type="number" id="f-tdp" name="tdpWatts" min="0" step="1" placeholder="120" />
           </div>
 
           <div class="form-row">
@@ -91,39 +86,129 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 <script>
   import { getSession } from "@/lib/auth";
   import { stageSubmission } from "@/services/dataService";
+  import { getOrCreateAnonymousId, getOrCreateContributorHash } from "@modules/contributors/identity";
   import { normalizeSku } from "@modules/database/adapters";
-  import { getOrCreateAnonymousId } from "@modules/contributors/identity";
+  import { validateSpecs } from "@modules/database/ingest";
+  import { SPEC_FORM_FIELDS } from "@/lib/specForm";
+  import type { ComponentCategory, SpecValue } from "@modules/database/contracts";
+  import type { ContributorTier } from "@modules/contributors/contracts";
 
   const session = getSession();
   const noteEl = document.getElementById("contribute-signed-in") as HTMLParagraphElement;
   noteEl.hidden = false;
-  if (session) {
-    noteEl.textContent = `Submitting as ${session.username} (Trusted Contributor once approved). You can also submit anonymously by signing out.`;
-  } else {
-    const anonId = getOrCreateAnonymousId();
-    noteEl.textContent = `Submitting anonymously as ${anonId} — a random ID kept only in this browser, not a real identity. Sign in to submit as a named contributor instead.`;
-  }
+  noteEl.textContent = session
+    ? `Submitting as ${session.username} (Trusted Contributor once approved). You can also submit anonymously by signing out.`
+    : `Submitting anonymously as ${getOrCreateAnonymousId()} — a random ID stored only in this browser, never a real identity. ` +
+      `It is what lets your approved submissions build a reputation without an account; clearing site data resets both.`;
 
   const form = document.getElementById("contribute-form") as HTMLFormElement;
+  const categorySelect = document.getElementById("f-category") as HTMLSelectElement;
+  const fieldset = document.getElementById("spec-fieldset") as HTMLFieldSetElement;
+  const legend = document.getElementById("spec-legend") as HTMLLegendElement;
+  const hint = document.getElementById("spec-hint") as HTMLParagraphElement;
+  const specFields = document.getElementById("spec-fields") as HTMLDivElement;
   const errorEl = document.getElementById("form-error") as HTMLParagraphElement;
   const successEl = document.getElementById("form-success") as HTMLParagraphElement;
 
-  function showError(msg: string): void {
-    errorEl.hidden = false;
-    errorEl.textContent = msg;
+  /** Rebuilds the spec inputs for the selected category. */
+  function renderSpecFields(category: ComponentCategory | ""): void {
+    specFields.replaceChildren();
+    if (!category) {
+      fieldset.hidden = true;
+      return;
+    }
+
+    legend.textContent = `${category} specifications`;
+    hint.textContent =
+      category === "GPU"
+        ? "No socket field — a GPU is a card on a bus, not a part seated in a socket."
+        : category === "RAM"
+          ? "A memory kit has neither a socket nor an architecture."
+          : "Required fields are marked *; leave the rest blank if the part predates them.";
+
+    for (const field of SPEC_FORM_FIELDS[category]) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "form-row";
+
+      const id = `spec-${field.key}`;
+      const label = document.createElement("label");
+      label.htmlFor = id;
+      label.textContent = (field.unit ? `${field.label} (${field.unit})` : field.label) + (field.required ? " *" : "");
+      wrapper.appendChild(label);
+
+      if (field.kind === "select") {
+        const select = document.createElement("select");
+        select.id = id;
+        select.dataset.specKey = field.key;
+        const blank = document.createElement("option");
+        blank.value = "";
+        blank.textContent = field.required ? "Select…" : "—";
+        select.appendChild(blank);
+        for (const option of field.options ?? []) {
+          const opt = document.createElement("option");
+          opt.value = option;
+          opt.textContent = option;
+          select.appendChild(opt);
+        }
+        wrapper.appendChild(select);
+      } else {
+        const input = document.createElement("input");
+        input.id = id;
+        input.dataset.specKey = field.key;
+        input.type = field.kind === "number" ? "number" : "text";
+        if (field.kind === "number") {
+          input.min = "0";
+          input.step = "any";
+        } else {
+          input.maxLength = 40;
+        }
+        if (field.placeholder) input.placeholder = field.placeholder;
+        wrapper.appendChild(input);
+      }
+
+      specFields.appendChild(wrapper);
+    }
+
+    fieldset.hidden = false;
   }
 
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
+  categorySelect.addEventListener("change", () => renderSpecFields(categorySelect.value as ComponentCategory | ""));
+
+  /** Collects the rendered spec inputs, omitting blanks. */
+  function collectSpecs(): Record<string, SpecValue> {
+    const specs: Record<string, SpecValue> = {};
+    specFields.querySelectorAll<HTMLInputElement | HTMLSelectElement>("[data-spec-key]").forEach((el) => {
+      const key = el.dataset.specKey as string;
+      const raw = el.value.trim();
+      if (raw === "") return;
+      specs[key] = el instanceof HTMLInputElement && el.type === "number" ? Number(raw) : raw;
+    });
+    return specs;
+  }
+
+  function showError(message: string): void {
+    errorEl.hidden = false;
+    errorEl.textContent = message;
+  }
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
     errorEl.hidden = true;
     successEl.hidden = true;
 
     const data = new FormData(form);
-    const price = parseFloat(String(data.get("observedPrice")));
+    const category = String(data.get("category") || "") as ComponentCategory | "";
+    const componentName = String(data.get("componentName") || "").trim();
+    const manufacturer = String(data.get("manufacturer") || "").trim();
+    const price = parseFloat(String(data.get("reportedPrice")));
     const year = parseInt(String(data.get("releaseYear")), 10);
     const proofUrl = String(data.get("proofUrl") || "").trim();
 
-    if (isNaN(price) || price < 0) return showError("Observed price must be a valid non-negative number.");
+    if (!category) return showError("Select a category.");
+    if (!componentName) return showError("Component name is required.");
+    if (!manufacturer) return showError("Manufacturer is required.");
+    if (!Number.isFinite(price) || price < 0) return showError("Observed price must be a valid non-negative number.");
+    if (!Number.isFinite(year)) return showError("Release year is required.");
     if (!proofUrl) return showError("Proof of value URL is required.");
     try {
       new URL(proofUrl);
@@ -131,26 +216,53 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       return showError("Proof of value must be a valid URL.");
     }
 
-    const componentName = String(data.get("componentName"));
-    const category = String(data.get("category"));
+    // Validated against the DATABASE contract rather than a form-local rule
+    // set, so a submission is checked by exactly what the catalogue demands.
+    const specs = collectSpecs();
+    const issues = validateSpecs(specs, category);
+    if (issues.length > 0) {
+      return showError(issues.map((issue) => `${issue.field}: ${issue.message}`).join(" "));
+    }
 
-    stageSubmission({
+    const base = {
+      // Attached automatically, but disclosed above rather than hidden: a
+      // persistent identifier the contributor cannot see is a dark pattern.
+      contributorHash: getOrCreateContributorHash(),
       sku: normalizeSku(componentName, category),
       componentName,
-      category,
-      socket: String(data.get("socket")),
-      generation: String(data.get("generation")),
+      manufacturer,
       releaseYear: year,
       reportedPrice: price,
       currency: String(data.get("currency")),
-      tdpWatts: data.get("tdpWatts") ? parseInt(String(data.get("tdpWatts")), 10) : null,
       proofUrl,
       contributorId: session ? session.username : getOrCreateAnonymousId(),
-      contributorTier: session ? "trusted" : "anonymous"
-    });
+      contributorTier: (session ? "trusted" : "anonymous") as ContributorTier
+    };
+
+    // `validateSpecs` has just proved the bag matches the category's contract;
+    // the switch is what carries that proof into the discriminated union.
+    switch (category) {
+      case "CPU":
+        stageSubmission({ ...base, category, specs: specs as unknown as import("@modules/database/contracts").CpuSpecs });
+        break;
+      case "GPU":
+        stageSubmission({ ...base, category, specs: specs as unknown as import("@modules/database/contracts").GpuSpecs });
+        break;
+      case "RAM":
+        stageSubmission({ ...base, category, specs: specs as unknown as import("@modules/database/contracts").RamSpecs });
+        break;
+      case "MOBO":
+        stageSubmission({ ...base, category, specs: specs as unknown as import("@modules/database/contracts").MoboSpecs });
+        break;
+      case "STORAGE":
+        stageSubmission({ ...base, category, specs: specs as unknown as import("@modules/database/contracts").StorageSpecs });
+        break;
+    }
 
     form.reset();
+    renderSpecFields("");
     successEl.hidden = false;
-    successEl.textContent = "Submitted. Your entry is Pending Validation and will appear on the screener once approved.";
+    successEl.textContent =
+      "Submitted. Your entry is staged as Pending Validation and reaches the screener only after an admin approves it.";
   });
 </script>

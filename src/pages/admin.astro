@@ -212,6 +212,7 @@ import { DEV_ECOSYSTEM_NAV } from "../config/navigation";
   import { get as getSettings, set as setSettings, reset as resetSettings } from "@/lib/settings";
   import { getNavItem } from "@/config/navigation";
   import { formatPrice, escapeHtml } from "@/lib/format";
+  import { CATEGORY_LABELS, specSummary } from "@/lib/specDisplay";
   import type { SiteSettings } from "@/lib/types";
 
   const session = getSession();
@@ -368,8 +369,9 @@ import { DEV_ECOSYSTEM_NAV } from "../config/navigation";
     return (
       "<tr>" +
       `<td><span class="component-name">${escapeHtml(item.componentName)}</span>` +
-      `<span class="component-category">${escapeHtml(item.category)}</span>` +
-      `<br><span class="spec-meta">${escapeHtml(item.sku)}</span></td>` +
+      `<span class="component-category">${escapeHtml(CATEGORY_LABELS[item.category])}</span>` +
+      `<br><span class="spec-meta">${escapeHtml(item.sku)}</span>` +
+      `<br><span class="spec-meta">${escapeHtml(specSummary(item))}</span></td>` +
       `<td>${escapeHtml(item.contributorId)}<br>${tier}</td>` +
       `<td class="num-cell market-price">${formatPrice(item.reportedPrice, item.currency)}</td>` +
       `<td class="num-cell">${medianCell}</td>` +

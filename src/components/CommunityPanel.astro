@@ -30,6 +30,8 @@
 
 <script>
   import { readStaged } from "@/services/dataService";
+  import { CATEGORY_LABELS } from "@/lib/specDisplay";
+  import { specSummary } from "@/lib/specDisplay";
   import type { PriceSubmission } from "@modules/contributors/contracts";
   import { formatPrice, escapeHtml } from "@/lib/format";
 
@@ -54,8 +56,8 @@
     return (
       "<tr>" +
       `<td><span class="component-name">${escapeHtml(item.componentName)}</span>` +
-      `<span class="component-category">${escapeHtml(item.category)}</span></td>` +
-      `<td><span class="spec-meta">${escapeHtml(item.socket)} · ${escapeHtml(item.generation)}</span></td>` +
+      `<span class="component-category">${escapeHtml(CATEGORY_LABELS[item.category])}</span></td>` +
+      `<td><span class="spec-meta">${escapeHtml(specSummary(item))}</span></td>` +
       `<td class="num-cell market-price">${formatPrice(item.reportedPrice, item.currency)}</td>` +
       `<td>${escapeHtml(item.contributorId)}</td>` +
       `<td><span class="badge ${STATUS_BADGE[item.status]}"><span class="badge-dot"></span>${escapeHtml(label)}</span>${auto}</td>` +

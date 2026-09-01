@@ -11,24 +11,34 @@
  * in long form.
  */
 
-import { CATEGORY_ALIASES, type ComponentSpecs, type HardwareComponent, type PricePointTuple } from "./contracts";
+import type { ComponentCategory, HardwareComponent, PricePointTuple, SpecsByCategory } from "./contracts";
 
 /** Long-form category labels as published upstream. */
 export type HardwareCategory = "GPU" | "CPU" | "RAM" | "Storage" | "Motherboard";
 
-export interface HardwareSchema {
+interface SchemaBase {
   sku: string;
   brand: string;
   model: string;
-  category: HardwareCategory;
   /** Launch MSRP; null when the upstream record documents none. */
   msrp: number | null;
   currency: string;
   /** ISO 8601 date. */
   releaseDate: string;
-  /** Category-specific attributes, primitives only. */
-  specs?: ComponentSpecs;
 }
+
+type SchemaOf<C extends ComponentCategory, Label extends HardwareCategory> = SchemaBase & {
+  category: Label;
+  specs: SpecsByCategory[C];
+};
+
+/** Discriminated upstream record, so specs cannot be paired with the wrong category. */
+export type HardwareSchema =
+  | SchemaOf<"CPU", "CPU">
+  | SchemaOf<"GPU", "GPU">
+  | SchemaOf<"RAM", "RAM">
+  | SchemaOf<"MOBO", "Motherboard">
+  | SchemaOf<"STORAGE", "Storage">;
 
 /** Optional companion series published alongside the hardware record. */
 export interface HardwarePriceSeries {
@@ -40,28 +50,34 @@ export interface HardwarePriceSeries {
  * Adapts an upstream record into the portal's internal model.
  *
  * Fields the upstream schema does not carry (fair value, median price) must be
- * supplied by the caller — the portal never invents them. Returns null when
- * the upstream category is unrecognized, rather than guessing and silently
- * misfiling the part.
+ * supplied by the caller — the portal never invents them.
  */
 export function toHardwareComponent(
   upstream: HardwareSchema,
   series: PricePointTuple[],
   supplemental: Pick<HardwareComponent, "fairValueScore" | "medianMarketPrice">
-): HardwareComponent | null {
-  const category = CATEGORY_ALIASES[upstream.category.trim().toLowerCase()];
-  if (!category) return null;
-
-  return {
+): HardwareComponent {
+  const base = {
     sku: upstream.sku,
     name: `${upstream.brand} ${upstream.model}`.trim(),
-    category,
     manufacturer: upstream.brand,
     releaseYear: new Date(upstream.releaseDate).getUTCFullYear(),
     originalMSRP: upstream.msrp,
     currency: upstream.currency,
-    specs: upstream.specs ?? {},
     historicalPrices: series,
     ...supplemental
   };
+
+  switch (upstream.category) {
+    case "CPU":
+      return { ...base, category: "CPU", specs: upstream.specs };
+    case "GPU":
+      return { ...base, category: "GPU", specs: upstream.specs };
+    case "RAM":
+      return { ...base, category: "RAM", specs: upstream.specs };
+    case "Motherboard":
+      return { ...base, category: "MOBO", specs: upstream.specs };
+    case "Storage":
+      return { ...base, category: "STORAGE", specs: upstream.specs };
+  }
 }
