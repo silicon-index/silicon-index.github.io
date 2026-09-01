@@ -31,7 +31,8 @@
 </section>
 
 <script>
-  import { fetchContributors, type ContributorProfile } from "@/services/dataService";
+  import { fetchContributors } from "@/services/dataService";
+  import type { ContributorProfile } from "@modules/contributors/contracts";
   import { get as getSettings } from "@/lib/settings";
   import { escapeHtml } from "@/lib/format";
 

@@ -1,33 +1,24 @@
 /**
  * Moderation actions over the locally staged submission queue.
  *
- * Thin, testable layer on top of `src/services/dataService.ts`: the service
- * owns the models, the transport, and the auto-accept rules; this owns the
- * state transitions a moderator (or the engine) applies to a submission.
+ * Admin Dashboard module — the state transitions a moderator (or the
+ * auto-accept engine) applies to a submission. The service layer owns
+ * transport and storage; `modules/ai/engine.ts` owns the accept rules; this
+ * owns moderation itself.
  *
  * Demo constraint unchanged: the queue lives in `localStorage`, so moderation
  * decisions are per-browser until the Phase 5 backend lands.
  */
 
-import {
-  evaluateAutoAccept,
-  readStaged,
-  writeStaged,
-  type AutoAcceptDecision,
-  type HardwareComponent,
-  type PriceSubmission,
-  type SubmissionStatus
-} from "../services/dataService";
+import { evaluateAutoAccept } from "../ai/engine";
+import { readStaged, writeStaged } from "../../services/dataService";
+import type { AutoAcceptDecision } from "../ai/contracts";
+import type { HardwareComponent } from "../database/contracts";
+import type { PriceSubmission } from "../contributors/contracts";
+import { DENIAL_REASONS, type DenialReason, type SubmissionStatus } from "./contracts";
 
-export const DENIAL_REASONS = [
-  "Unverifiable proof URL",
-  "Price outside plausible market range",
-  "Duplicate submission",
-  "Wrong component / SKU mismatch",
-  "Violates data whitelist (PII or free text)"
-] as const;
-
-export type DenialReason = (typeof DENIAL_REASONS)[number];
+export { DENIAL_REASONS };
+export type { DenialReason };
 
 export function getSubmissions(): PriceSubmission[] {
   return readStaged();

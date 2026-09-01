@@ -203,11 +203,12 @@ import { DEV_ECOSYSTEM_NAV } from "../config/navigation";
   import { getSession } from "@/lib/auth";
   import {
     approve, deny, flag, reopen, getReviewQueue, getReviewed, runAutoAcceptEngine, DENIAL_REASONS
-  } from "@/lib/moderation";
-  import {
-    fetchMarketData, evaluateAutoAccept, toContributorSchema,
-    type HardwareComponent, type PriceSubmission
-  } from "@/services/dataService";
+  } from "@modules/admin/moderation";
+  import { fetchMarketData } from "@/services/dataService";
+  import { evaluateAutoAccept } from "@modules/ai/engine";
+  import { toContributorSchema } from "@modules/contributors/registry";
+  import type { HardwareComponent } from "@modules/database/contracts";
+  import type { PriceSubmission } from "@modules/contributors/contracts";
   import { get as getSettings, set as setSettings, reset as resetSettings } from "@/lib/settings";
   import { getNavItem } from "@/config/navigation";
   import { formatPrice, escapeHtml } from "@/lib/format";

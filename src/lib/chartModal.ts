@@ -1,5 +1,5 @@
 import uPlot from "uplot";
-import type { HardwareComponent } from "../services/dataService";
+import type { HardwareComponent } from "../modules/database/contracts";
 import { formatPrice } from "./format";
 
 let chart: uPlot | null = null;

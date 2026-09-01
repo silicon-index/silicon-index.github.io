@@ -82,7 +82,8 @@
 </div>
 
 <script>
-  import { fetchMarketData, type HardwareComponent } from "@/services/dataService";
+  import { fetchMarketData } from "@/services/dataService";
+  import type { HardwareComponent } from "@modules/database/contracts";
   import { formatPrice, escapeHtml } from "@/lib/format";
   import { openChartModal } from "@/lib/chartModal";
 

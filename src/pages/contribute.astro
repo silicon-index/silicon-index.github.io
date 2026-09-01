@@ -90,8 +90,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
 <script>
   import { getSession } from "@/lib/auth";
-  import { stageSubmission, normalizeSku } from "@/services/dataService";
-  import { getOrCreateAnonymousId } from "@/lib/identity";
+  import { stageSubmission } from "@/services/dataService";
+  import { normalizeSku } from "@modules/database/adapters";
+  import { getOrCreateAnonymousId } from "@modules/contributors/identity";
 
   const session = getSession();
   const noteEl = document.getElementById("contribute-signed-in") as HTMLParagraphElement;

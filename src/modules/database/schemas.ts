@@ -2,7 +2,7 @@
  * Wire contract published by `silicon-index-market-database.github.io` (`dev`).
  *
  * The UPSTREAM hardware record. The portal's internal model is
- * `HardwareComponent` in `src/services/dataService.ts`; this stays separate so
+ * `HardwareComponent` in `src/lib/types.ts`; this stays separate so
  * an upstream schema change is absorbed by the adapter below.
  *
  * Notable differences from the internal model: upstream splits `brand`/`model`
@@ -10,7 +10,7 @@
  * `releaseDate` rather than `releaseYear`.
  */
 
-import type { HardwareComponent, PricePointTuple } from "../../services/dataService";
+import type { HardwareComponent, PricePointTuple } from "./contracts";
 
 export type HardwareCategory = "GPU" | "CPU" | "RAM" | "Storage" | "Motherboard";
 

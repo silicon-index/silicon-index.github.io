@@ -1,26 +1,65 @@
-/* Submission and contributor models now live in src/services/dataService.ts
-   (PriceSubmission / ContributorProfile) — the canonical data layer. */
+/**
+ * App-level types, plus a facade over the module contracts.
+ *
+ * Domain models are OWNED by their module and re-exported here for
+ * convenience. The dependency direction is one-way — `lib/types` imports from
+ * `modules/*`, never the reverse — which is what keeps the graph acyclic while
+ * letting the app import from a single familiar path.
+ *
+ * Prefer importing from the owning module (`@modules/database/contracts`,
+ * `@modules/contributors/contracts`, …) in new code; these re-exports exist so
+ * the boundary is convenient, not so it can be ignored.
+ */
 
-export interface PricePoint {
-  month: string;
-  price: number;
-}
+export type {
+  ComponentEntry,
+  FieldConstraint,
+  HardwareComponent,
+  PricePoint,
+  PricePointTuple,
+  ValidationIssue,
+  ValidationResult
+} from "../modules/database/contracts";
 
-export interface ComponentEntry {
-  id: string;
-  name: string;
-  category: string;
-  socket: string;
-  generation: string;
-  releaseYear: number;
-  tdpWatts: number;
-  /** Launch MSRP. */
-  msrp: number;
-  fairValueScore: number;
-  marketPrice: number;
-  currency: string;
-  priceHistory: PricePoint[];
-}
+export type {
+  ContributorProfile,
+  ContributorSchemaPayload,
+  ContributorSubmission,
+  ContributorTier,
+  NewSubmissionInput,
+  PriceSubmission,
+  VerificationCheck,
+  VerificationResult
+} from "../modules/contributors/contracts";
+
+export type {
+  AutoAcceptRuleSpec,
+  DenialReason,
+  ModerationAction,
+  ModerationDecision,
+  SubmissionStatus
+} from "../modules/admin/contracts";
+
+export type {
+  AnomalyDetectionInput,
+  AnomalyDetectionOutput,
+  AutoAcceptDecision,
+  FairValueInput,
+  FairValueOutput
+} from "../modules/ai/contracts";
+
+export type {
+  IngestionPayload,
+  SanitizationResult,
+  SourceType,
+  WhitelistedStore
+} from "../modules/scrapers/contracts";
+
+export type { AdvisoryPayload, AdvisorySeverity, IncidentReport } from "../modules/security/contracts";
+
+/* ------------------------------------------------------------------ */
+/* App-level types — not owned by any ecosystem module                 */
+/* ------------------------------------------------------------------ */
 
 export type UserRole = "admin" | "contributor";
 

@@ -368,3 +368,88 @@ Item 55. Documented least privilege in the workflow header: a fine-grained PAT s
          far more than this task needs.
 Item 56. Verified: both workflow files parse as valid YAML, the script passes `bash -n`, the dry run completes
          end to end (545 + 32 insertions staged), and the token code path activates and stays quiet.
+
+## Phase 17 — Sorted the Project Into Modules (done)
+
+Item 57. Reorganised the portal by ecosystem module. `src/modules/<id>/` no longer holds only wire-contract
+         stubs — each now owns the portal-side logic for its domain, so the folder structure mirrors the
+         multi-repo architecture instead of describing it.
+Item 58. Moved the canonical models (`HardwareComponent`, `PriceSubmission`, `ContributorProfile`,
+         `PricePointTuple`, `ContributorTier`, `SubmissionStatus`) out of `services/dataService.ts` into
+         `src/lib/types.ts`, which imports nothing. This is what makes the split possible: every module shares
+         the same types without importing another module, so no cycle can form.
+Item 59. `src/modules/ai/engine.ts` — `median()`, `evaluateAutoAccept()`, `AUTO_ACCEPT_TOLERANCE`, extracted from
+         the service. Fair-value and anomaly rules now sit in the module that mirrors `silicon-index-ai`.
+Item 60. `src/modules/contributors/` — gained `registry.ts` (trust-score derivation, `ContributorSchemaPayload`,
+         `toContributorSchema`) and `identity.ts` (moved from `lib/`), alongside the existing `contracts.ts`.
+Item 61. `src/modules/database/adapters.ts` — `toHardwareComponent()`, `normalizeSku()`,
+         `isHardwareComponentArray()`, extracted from the service, alongside the existing `schemas.ts`.
+Item 62. `src/modules/admin/moderation.ts` — moved from `lib/moderation.ts`; now imports the accept rules from
+         `modules/ai/engine.ts` rather than from the service.
+Item 63. `services/dataService.ts` slimmed to transport and storage only: the two raw endpoints, the fallback
+         logic, `stageSubmission`, the staging store, and the legacy-schema migration. It composes the modules
+         (`database/adapters`, `contributors/registry`) and re-exports the models as a facade so the boundary
+         stays convenient to consume.
+Item 64. Updated every import site to reference the owning module rather than the facade, so the dependency
+         direction is visible at each call site (`@/modules/ai/engine`, `@/modules/admin/moderation`,
+         `@/modules/contributors/identity`, `@/modules/database/adapters`, `@/lib/types`).
+Item 65. Verified the structure holds, not just that it compiles: a script walks every `.ts` import edge and
+         does a DFS cycle check — **no import cycles**, with modules depending only on `lib/types`,
+         `modules/ai/engine`, and the service. Kept presentation (`components/`, `pages/`, `layouts/`) out of
+         the modules; the rule is modules own domain logic and contracts, components compose them.
+Item 66. Re-ran the full behavioural suite against the new locations to prove the move changed nothing: 20/20 —
+         ±15% boundary cases, anonymous-never-auto-accepted, trust-score maths, SKU normalization, the
+         adapter tuples, legacy-submission migration, the moderation queue, the contracts round-trip, and the
+         navigation resolver. `astro check` 0 errors across 30 files; build clean.
+Item 67. Rewrote `src/modules/README.md` with the layout table, the dependency rule (including the one permitted
+         cross-module edge, `admin/moderation → ai/engine`), and the contract-vs-canonical-model distinction;
+         each module README gained an "Owns (portal-side)" section listing its exports.
+
+## Phase 18 — Module Contracts & Enforced Decoupling (done)
+
+Item 68. Every module now carries a `contracts.ts` of pure TypeScript types, an implementation where it owns
+         one, and its own `README.md`. The two modules that previously had documentation only — `scrapers/` and
+         `security/` — now have real contracts.
+Item 69. `database/contracts.ts` — `HardwareComponent` (SKU, MSRP, median price, `historicalPrices`),
+         `PricePointTuple`, the raw `ComponentEntry` shape, and validation models (`FieldConstraint`,
+         `HARDWARE_CONSTRAINTS`, `ValidationResult`).
+Item 70. `contributors/contracts.ts` — `ContributorTier` (`anonymous` | `trusted`), `ContributorProfile`,
+         `PriceSubmission`/`NewSubmissionInput`, the verification schema (`VerificationCheck`,
+         `REQUIRED_VERIFICATION_CHECKS`, `VerificationResult`), `TRUST_TIER_SPEC`, the outbound
+         `ContributorSchemaPayload`, and the upstream `ContributorSubmission` wire shape with adapters both ways.
+Item 71. `scrapers/contracts.ts` — `IngestionPayload` plus `PERMITTED_INGESTION_FIELDS`, encoding DEV-GUIDE.md §2
+         as types: seller names, free text, and locations are not *representable* in the payload, so the
+         whitelist is enforced by the type rather than merely documented. Also `SourceType`,
+         `STRIPPED_QUERY_PREFIXES`, the store whitelist (`WhitelistedStore`, with `rateLimitMs` and
+         `respectsRobotsTxt: true` as contractual per §4), and the sanitization pipeline — where a rejected
+         record yields no payload at all, since partial ingestion should not be possible.
+Item 72. `ai/contracts.ts` — `FairValueInput`/`FairValueOutput`, `AnomalyDetectionInput`/`Output`, `AnomalyKind`,
+         `AutoAcceptDecision`, and the `FairValueScorer`/`AnomalyDetector`/`AutoAcceptEvaluator` interfaces.
+         `engine.ts` gained `detectAnomaly()` so the anomaly contract is implemented, not just declared.
+Item 73. `security/contracts.ts` — `AdvisoryPayload` (`SI-YYYY-NNN`, severity, CVSS, `AffectedModule[]`),
+         `IncidentReport`, and `DisclosurePolicy`. A reporter is a pseudonymous handle or `null`; there is
+         deliberately no email, IP, or location field, consistent with the no-PII rule applied elsewhere.
+Item 74. `admin/contracts.ts` — `SubmissionStatus` (owned here because its states are moderation outcomes),
+         `ModerationAction`, `DENIAL_REASONS`, `ModerationDecision`, and `AutoAcceptRuleSpec` +
+         `AUTO_ACCEPT_RULES`. The ±15% rule set is now inspectable data; `engine.ts` reads its tolerance from it,
+         so the rule has exactly one definition instead of a duplicated literal.
+Item 75. Inverted the ownership of the canonical models: they moved out of `src/lib/types.ts` into the module
+         that owns them, and `lib/types.ts` became a **re-export facade**. Direction is one-way — `lib/types`
+         imports from `modules/*`, never the reverse.
+Item 76. Contracts are layered to stay acyclic: layer 0 (`admin`, `database`, `scrapers`, `security`) imports
+         nothing; layer 1 (`contributors`, `ai`) imports layer 0 type-only; implementations sit above.
+Item 77. Added the `@modules/*` alias with a single source of truth: `aliases.mjs` is imported by
+         `astro.config.mjs` and the new `vite.config.mjs`, and mirrored in `tsconfig.json` `paths`. App code
+         (`services/dataService.ts`, pages, components) now imports contracts from `@modules/*` rather than
+         inline or facade types.
+Item 78. Added `scripts/check-architecture.mjs`, run via `npm run check:arch` (and `npm run check` alongside
+         `astro check`), wired into `deploy.yml` so the build is gated on it. It enforces the two invariants
+         TypeScript will not catch: every `contracts.ts` is free of runtime imports, and the whole `src/` import
+         graph is acyclic (tsc compiles cycles happily; they fail at runtime as undefined bindings).
+Item 79. Verified the guard by breaking it on purpose — added a runtime import to `security/contracts.ts` and
+         confirmed it fails with exit 1 and names the file, then restored and confirmed it passes. A check that
+         has never failed is not known to work.
+Item 80. Full verification: `astro check` 0 errors across 35 files, architecture check passes (19 files scanned,
+         6 contracts pure, no cycles), production build clean, and the behavioural suite re-run at 29/29 —
+         including the new anomaly-detector cases and assertions that the engine's tolerance matches the
+         contract's rule spec.

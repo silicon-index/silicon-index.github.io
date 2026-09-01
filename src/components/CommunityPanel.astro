@@ -29,7 +29,8 @@
 </section>
 
 <script>
-  import { readStaged, type PriceSubmission } from "@/services/dataService";
+  import { readStaged } from "@/services/dataService";
+  import type { PriceSubmission } from "@modules/contributors/contracts";
   import { formatPrice, escapeHtml } from "@/lib/format";
 
   const STATUS_LABEL: Record<PriceSubmission["status"], string> = {
