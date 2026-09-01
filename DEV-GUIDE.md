@@ -51,5 +51,5 @@ To maintain operational stability, direct pushes to `main` are restricted on all
 By contributing code, models, or data scripts to any repository under `silicon-index`, you agree to the following terms:
 
 1. **Lawful Collection:** Scrapers and tools developed must comply with robots exclusion standards and must not execute aggressive denial-of-service traffic patterns. Rate-limiting backoffs must be implemented by default.
-2. **IP Ownership:** Contributions submitted via Pull Requests are licensed under the repository's MIT License unless explicitly designated otherwise.
+2. **IP Ownership:** Contributions submitted via Pull Requests are licensed under the repository's **GNU AGPLv3** unless explicitly designated otherwise. If you deploy a modified version as a network service, AGPLv3 §13 obliges you to offer its complete source to that service's users.
 3. **Audit Rights:** Maintainers reserve the right to immediately reject, sanitize, or delete any data submissions or commits that violate privacy regulations (GDPR) or data safety standards.
