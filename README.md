@@ -24,8 +24,8 @@ The project is structured modularly across specialized repositories within the `
 ## 🚀 Live Access
 
 * **Main Screener:** [https://silicon-index.github.io](https://silicon-index.github.io)
-* **Tech Museum:** [https://silicon-index.github.io/museum](https://silicon-index.github.io/museum)
-* **Community Blog:** [https://silicon-index.github.io/blog](https://silicon-index.github.io/blog)
+* **Tech Museum:** [https://silicon-index.github.io/museum](https://silicon-index-museum.github.io)
+* **Community Blog:** [https://silicon-index.github.io/blog](https://silicon-index-blog.github.io)
 * **Terms & Governance:** [TERMS-AND-RULES.md](./TERMS-AND-RULES.md)
 * **Contributor Standards:** [DEV-GUIDE.md](./DEV-GUIDE.md)
 ---
