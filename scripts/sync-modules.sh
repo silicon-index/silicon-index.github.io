@@ -8,9 +8,10 @@
 #   the org works; writing to them returns:
 #       403 Resource not accessible by integration
 #   Note that `gh api repos/<org>/<repo>` reports `permissions.push: true` —
-#   that describes the *account's* rights, not the *token's*. So this sync has
-#   to run from a terminal using your own credentials (a PAT with `repo` scope,
-#   SSH keys, or `gh auth login` as yourself).
+#   that describes the *account's* rights, not the *token's*. So this sync runs
+#   either from a local terminal with your own credentials, or from CI with a
+#   PAT supplied as SYNC_TOKEN (see AUTHENTICATION below and
+#   .github/workflows/sync.yml).
 #
 # WHAT IT DOES
 #   For each target module repo, on branch `dev`:
@@ -21,6 +22,16 @@
 # USAGE
 #   ./scripts/sync-modules.sh              # dry run — prints planned changes
 #   ./scripts/sync-modules.sh --push       # actually commit and push
+#
+# AUTHENTICATION
+#   Locally: nothing to do. Your ambient Git credentials (SSH agent, GitHub
+#   Credential Manager, or `gh auth login`) are used as-is.
+#
+#   In CI: set SYNC_TOKEN (or GH_TOKEN) to a PAT with write access to the
+#   target repos. NOTE: exporting GH_TOKEN alone is not enough for a plain
+#   `git push` — that variable is read by the `gh` CLI, not by git. This script
+#   therefore wires the token into git through a temporary credential helper,
+#   so the token never appears in a remote URL, in argv, or in the logs.
 #
 set -euo pipefail
 
@@ -35,6 +46,24 @@ trap 'rm -rf "$WORK"' EXIT
 
 log()  { printf '\033[36m%s\033[0m\n' "$*"; }
 warn() { printf '\033[33m%s\033[0m\n' "$*"; }
+
+# Prefer an explicit sync token; fall back to GH_TOKEN; otherwise use ambient
+# credentials. The token is passed to git via a helper that reads it from the
+# environment, so it is never written into a URL or echoed.
+export SYNC_AUTH_TOKEN="${SYNC_TOKEN:-${GH_TOKEN:-}}"
+GIT_AUTH=()
+if [[ -n "$SYNC_AUTH_TOKEN" ]]; then
+  HELPER="$WORK/credential-helper.sh"
+  cat > "$HELPER" <<'HELPER_EOF'
+#!/usr/bin/env bash
+[[ "${1:-}" == "get" ]] || exit 0
+printf 'username=x-access-token\npassword=%s\n' "$SYNC_AUTH_TOKEN"
+HELPER_EOF
+  chmod +x "$HELPER"
+  GIT_AUTH=(-c "credential.helper=$HELPER")
+  log "Using token authentication (SYNC_TOKEN/GH_TOKEN)."
+fi
+git_c() { git ${GIT_AUTH[@]+"${GIT_AUTH[@]}"} "$@"; }
 
 if ! $PUSH; then
   warn "DRY RUN — nothing will be pushed. Re-run with --push to publish."
@@ -168,7 +197,7 @@ sync_repo() {
 
   log "==> $repo (branch: $BRANCH)"
 
-  if ! git clone --quiet --branch "$BRANCH" --depth 1 \
+  if ! git_c clone --quiet --branch "$BRANCH" --depth 1 \
       "https://github.com/$ORG/$repo.git" "$dir" 2>/dev/null; then
     warn "    clone failed — check the repo exists, has a '$BRANCH' branch, and that you have access."
     return 1
@@ -192,8 +221,18 @@ sync_repo() {
     return 0
   fi
 
+  # CI runners have no global git identity; set one per-clone if absent.
+  if ! git -C "$dir" config user.email >/dev/null 2>&1; then
+    git -C "$dir" config user.email "${SYNC_GIT_EMAIL:-actions@github.com}"
+    git -C "$dir" config user.name  "${SYNC_GIT_NAME:-silicon-index sync}"
+  fi
+
   git -C "$dir" commit --quiet -m "$message"
-  git -C "$dir" push --quiet origin "$BRANCH"
+  if ! git_c -C "$dir" push --quiet origin "$BRANCH"; then
+    warn "    push failed — the credentials in use lack write access to $repo."
+    warn "    A Codespaces GITHUB_TOKEN cannot write to sibling repos (403); use a PAT via SYNC_TOKEN."
+    return 1
+  fi
   log "    pushed $(git -C "$dir" rev-parse --short HEAD)"
 }
 

@@ -339,3 +339,32 @@ Item 50. The brief's `HeaderNav.astro` rendered the six ecosystem links inline; 
          auth slot also in the bar that does not fit, so they stay in the accessible dropdown from Phase 12,
          restyled to match (zinc surfaces, emerald badges). New `.term-*` classes were added rather than
          overwriting the existing design tokens, so the rest of the site is untouched.
+
+## Phase 16 — CI Sync Workflow (done)
+
+Item 51. Made `scripts/sync-modules.sh` token-aware so it runs in CI as well as locally. The brief's workflow
+         exported `GH_TOKEN` and called the script directly — that would not have worked: the script uses plain
+         `git clone`/`git push`, and `GH_TOKEN` is read by the `gh` CLI, not by git. The clone would have
+         succeeded (public read) and the push would then have failed on auth.
+Item 52. The token is wired into git through a temporary credential helper that reads it from the environment,
+         rather than embedding it in the remote URL. It therefore never appears in a URL, in argv, or in output.
+         Verified: helper emits the correct `username`/`password` pair for `get`, stays silent for `store`, and a
+         full dry run with a known token value contains 0 occurrences of it.
+Item 53. Added git identity setup per-clone (`SYNC_GIT_NAME`/`SYNC_GIT_EMAIL`, defaulted). CI runners have no
+         global `user.name`/`user.email`, so the commit would otherwise have failed after all the work was done.
+Item 54. Added `.github/workflows/sync.yml`. Changes from the brief's version, each for a reason:
+         - `paths:` filter so the sync only fires when `public/mock-data.json` or the sync tooling actually
+           changes. Running it on *every* push to `dev` means every unrelated commit rewrites data in two other
+           repositories.
+         - `workflow_dispatch` with a `dry_run` input defaulting to **true**, so a manual run previews by default.
+         - `permissions: contents: read` — the job writes nothing to this repo.
+         - `persist-credentials: false` on checkout, so the repo-scoped default token is not left wired into git
+           config while the script authenticates its own clones.
+         - A preflight step that fails with a clear message when `SYNC_TOKEN` is missing, instead of failing
+           opaquely at push time.
+         - `concurrency` group so two syncs cannot race on the same target repos.
+Item 55. Documented least privilege in the workflow header: a fine-grained PAT scoped to just the two target
+         repos with "Contents: Read and write" is sufficient. A classic `repo`-scope PAT also works but grants
+         far more than this task needs.
+Item 56. Verified: both workflow files parse as valid YAML, the script passes `bash -n`, the dry run completes
+         end to end (545 + 32 insertions staged), and the token code path activates and stays quiet.

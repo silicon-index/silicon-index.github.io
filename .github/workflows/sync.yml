@@ -1,0 +1,82 @@
+name: Sync Sibling Repositories
+
+# Publishes the portal's data contracts to the sibling module repos.
+#
+# WHY A PAT IS REQUIRED
+#   The default GITHUB_TOKEN is scoped to THIS repository. Writing to another
+#   repo in the org with it fails:
+#       403 Resource not accessible by integration
+#   Create a PAT with write access to the target repos and store it as the
+#   SYNC_TOKEN secret (Settings → Secrets and variables → Actions).
+#
+#   Least privilege: a fine-grained PAT limited to
+#   silicon-index-market-database.github.io and
+#   silicon-index-contributors.github.io with "Contents: Read and write" is
+#   enough. A classic PAT needs the `repo` scope, which grants far more.
+#
+# TRIGGERS
+#   Runs on pushes to `dev` that actually change the synced payload or the
+#   sync tooling — not on every commit, since each run rewrites data in two
+#   other repositories. Use the manual trigger for anything else; it defaults
+#   to a dry run.
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - "public/mock-data.json"
+      - "scripts/sync-modules.sh"
+      - ".github/workflows/sync.yml"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Preview changes without pushing"
+        type: boolean
+        default: true
+
+# Only read this repo; all writes go to the siblings via SYNC_TOKEN.
+permissions:
+  contents: read
+
+# Never let two syncs race on the same target repos.
+concurrency:
+  group: sync-sibling-repos
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The script authenticates its own clones; don't leave the default
+          # repo-scoped token wired into git config.
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Verify SYNC_TOKEN is configured
+        if: ${{ github.event_name == 'push' || inputs.dry_run == false }}
+        env:
+          SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          if [ -z "$SYNC_TOKEN" ]; then
+            echo "::error::SYNC_TOKEN secret is not set. Pushing to sibling repos needs a PAT" \
+                 "with write access to them; the default GITHUB_TOKEN returns 403."
+            exit 1
+          fi
+
+      - name: Run module sync
+        env:
+          SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
+          SYNC_GIT_NAME: silicon-index sync
+          SYNC_GIT_EMAIL: actions@github.com
+        run: |
+          chmod +x scripts/sync-modules.sh
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
+            ./scripts/sync-modules.sh
+          else
+            ./scripts/sync-modules.sh --push
+          fi
