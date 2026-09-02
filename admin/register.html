@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Register — Silicon Index Admin</title>
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="admin-header">
+      <a class="admin-brand" href="../index.html">Silicon Index</a>
+      <span class="admin-header-title">Admin Panel</span>
+    </header>
+
+    <main class="admin-main">
+      <section class="admin-panel admin-panel-narrow">
+        <h1>Create an account</h1>
+        <p class="admin-dim">
+          New accounts get standard <code>user</code> access. Admin/moderator access
+          is granted separately and can't be requested through this form.
+        </p>
+        <form id="register-form" autocomplete="off" novalidate>
+          <label class="admin-field">
+            <span>Username</span>
+            <input type="text" name="username" required minlength="3" maxlength="32" pattern="[a-zA-Z0-9_-]+" autocomplete="username" />
+          </label>
+          <label class="admin-field">
+            <span>Email</span>
+            <input type="email" name="email" required autocomplete="email" />
+          </label>
+          <label class="admin-field">
+            <span>Password</span>
+            <input type="password" name="password" required minlength="8" autocomplete="new-password" />
+          </label>
+          <label class="admin-field">
+            <span>Confirm password</span>
+            <input type="password" name="confirmPassword" required minlength="8" autocomplete="new-password" />
+          </label>
+          <button type="submit" class="admin-btn admin-btn-primary">Create account</button>
+          <p id="form-error" class="admin-error" role="alert" hidden></p>
+        </form>
+        <p class="admin-footnote admin-dim">
+          Already have an account? <a class="admin-link" href="login.html">Sign in</a>
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="register.js"></script>
+</body>
+</html>

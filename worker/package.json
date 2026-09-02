@@ -1,0 +1,18 @@
+{
+  "name": "silicon-index-admin-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --config ./wrangler.toml",
+    "deploy": "wrangler deploy --config ./wrangler.toml",
+    "db:migrate": "wrangler d1 execute silicon-index-admin --config ./wrangler.toml --file=./schema.sql",
+    "hash-password": "node scripts/hash-password.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^3.78.0"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.14.0",
+    "@noble/ciphers": "^2.4.0"
+  }
+}

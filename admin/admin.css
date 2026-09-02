@@ -1,0 +1,248 @@
+/* Self-contained theme tokens + base reset, so /admin/ never depends on the site's
+   root style.css existing (branch/deploy layout can vary independently of this). */
+:root {
+  --bg: #0b0d12;
+  --bg-raised: #12151c;
+  --bg-inset: #0e1015;
+  --border: #232734;
+  --border-soft: #1a1e28;
+  --text: #e6e8ee;
+  --text-dim: #9aa1b0;
+  --text-faint: #5c6373;
+  --accent: #4f8dfd;
+  --accent-dim: #2c5ba8;
+  --good: #34d399;
+  --good-bg: rgba(52, 211, 153, 0.12);
+  --bad: #f87171;
+  --bad-bg: rgba(248, 113, 113, 0.14);
+  --warn: #fbbf24;
+  --radius: 6px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-raised);
+}
+
+.admin-brand {
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-header-title {
+  color: var(--text-dim);
+  flex: 1;
+}
+
+.admin-main {
+  flex: 1;
+  padding: 32px 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.admin-panel {
+  width: 100%;
+  max-width: 900px;
+}
+
+.admin-panel-narrow {
+  max-width: 380px;
+  margin-top: 40px;
+}
+
+.admin-panel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-dim {
+  color: var(--text-dim);
+}
+
+.admin-field {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.admin-field span {
+  display: block;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.admin-field input {
+  width: 100%;
+  padding: 9px 10px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.admin-field input:focus {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: 1px;
+}
+
+.admin-btn {
+  padding: 9px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-inset);
+  color: var(--text);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.admin-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0b0d12;
+  font-weight: 600;
+}
+
+.admin-btn-ghost {
+  background: transparent;
+}
+
+.admin-btn-approve {
+  border-color: var(--good);
+  color: var(--good);
+  background: var(--good-bg);
+}
+
+.admin-btn-reject {
+  border-color: var(--bad);
+  color: var(--bad);
+  background: var(--bad-bg);
+}
+
+.admin-error {
+  color: var(--bad);
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.admin-status-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.admin-tab {
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.admin-tab.is-active {
+  background: var(--bg-inset);
+  color: var(--text);
+  border-color: var(--accent-dim);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.admin-table th {
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.admin-row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-success {
+  color: var(--good);
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.admin-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.admin-link:hover {
+  text-decoration: underline;
+}
+
+.admin-footnote {
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.admin-banner {
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+  font-size: 13.5px;
+}
+
+.admin-banner-warn {
+  border-color: var(--warn);
+  background: rgba(251, 191, 36, 0.1);
+  color: var(--text);
+}
+
+.admin-loading {
+  color: var(--text-dim);
+}

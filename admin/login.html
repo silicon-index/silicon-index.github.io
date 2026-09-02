@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign in — Silicon Index Admin</title>
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="admin-header">
+      <a class="admin-brand" href="../index.html">Silicon Index</a>
+      <span class="admin-header-title">Admin Panel</span>
+    </header>
+
+    <main class="admin-main">
+      <section class="admin-panel admin-panel-narrow">
+        <h1>Sign in</h1>
+        <p class="admin-dim">
+          Sessions are stored server-side with an expiry — nothing is kept in this
+          browser beyond an HttpOnly cookie the page can't read.
+        </p>
+        <form id="login-form" autocomplete="off" novalidate>
+          <label class="admin-field">
+            <span>Email or username</span>
+            <input type="text" name="identifier" required autocomplete="username" />
+          </label>
+          <label class="admin-field">
+            <span>Password</span>
+            <input type="password" name="password" required autocomplete="current-password" />
+          </label>
+          <button type="submit" class="admin-btn admin-btn-primary">Sign in</button>
+          <p id="form-error" class="admin-error" role="alert" hidden></p>
+        </form>
+        <p class="admin-footnote admin-dim">
+          Don't have an account? <a class="admin-link" href="register.html">Register</a>
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="login.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+name = "silicon-index-admin-api"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+
+# --- Storage -----------------------------------------------------------------
+# Default/production datastore: Cloudflare D1 (free tier, SQLite at the edge).
+# Create it once with: wrangler d1 create silicon-index-admin
+# then paste the returned database_id below and apply schema.sql:
+#   wrangler d1 execute silicon-index-admin --file=./schema.sql
+[[d1_databases]]
+binding = "DB"
+database_name = "silicon-index-admin"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+# Alternative datastore: Turso/LibSQL (self-hosted sqld, a local file via sqld, or
+# Turso's hosted service). Set these as secrets to switch db.js off D1 with no code
+# changes - useful for local dev or a non-Cloudflare deploy target:
+#   wrangler secret put LIBSQL_URL
+#   wrangler secret put LIBSQL_AUTH_TOKEN   (omit if the server has no auth)
+# Leave both unset to use the D1 binding above.
+
+# --- Config --------------------------------------------------------------------
+[vars]
+# Origin allowed to call this API with credentials - the static admin UI's origin.
+ALLOWED_ORIGIN = "https://silicon-index.github.io"
+SESSION_TTL_SECONDS = "43200" # 12 hours
+
+# --- Secrets (set via `wrangler secret put <NAME>`, never committed) -----------
+# SESSION_HMAC_SECRET  - >= 32 random bytes (e.g. `openssl rand -base64 32`), used to
+#                         MAC session validators (see src/session.js).
+# SESSION_ENC_KEY       - exactly 32 raw bytes, base64url-encoded (e.g.
+#                         `openssl rand -base64 32` piped through base64url), the
+#                         ChaCha20-Poly1305 key for encrypting session payloads at rest.
+# LIBSQL_URL            - optional, see above.
+# LIBSQL_AUTH_TOKEN     - optional, see above.
+
+# Hourly purge of expired session rows. Safe to remove - verifySession() also lazily
+# deletes an expired row the moment it's read - but this bounds how long stale rows
+# can sit in the DB between logins.
+[triggers]
+crons = ["0 * * * *"]

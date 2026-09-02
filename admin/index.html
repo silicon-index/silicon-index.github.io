@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Silicon Index — Admin</title>
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="admin-header">
+      <a class="admin-brand" href="../index.html">Silicon Index</a>
+      <span class="admin-header-title">Admin Panel</span>
+      <span id="whoami" class="admin-dim" hidden></span>
+      <button id="logout-btn" class="admin-btn admin-btn-ghost" hidden>Sign out</button>
+    </header>
+
+    <main class="admin-main">
+      <section id="loading-view" class="admin-panel">
+        <p class="admin-loading">Checking your session…</p>
+      </section>
+
+      <section id="denied-view" class="admin-panel" hidden>
+        <p class="admin-banner admin-banner-warn">
+          You're signed in, but this account doesn't have admin access. If you believe
+          this is a mistake, contact a site administrator.
+        </p>
+      </section>
+
+      <section id="dashboard-view" class="admin-panel" hidden>
+        <div class="admin-panel-row">
+          <h1>Pending submissions</h1>
+          <div class="admin-status-tabs" role="tablist">
+            <button class="admin-tab is-active" data-status="pending">Pending</button>
+            <button class="admin-tab" data-status="approved">Approved</button>
+            <button class="admin-tab" data-status="rejected">Rejected</button>
+          </div>
+        </div>
+        <p id="dashboard-error" class="admin-error" role="alert" hidden></p>
+        <p id="dashboard-empty" class="admin-dim" hidden>Nothing here.</p>
+        <table id="submissions-table" class="admin-table" hidden>
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Price</th>
+              <th>Submitted by</th>
+              <th>Submitted</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="submissions-body"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="admin.js"></script>
+</body>
+</html>
