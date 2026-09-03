@@ -102,7 +102,14 @@ function toStagedRow(
     return { ok: false, message: "reportedPrice must be a non-negative number." };
   }
   try {
-    new URL(proofUrl);
+    // Scheme allowlist, not just "does this parse": `new URL()` happily
+    // accepts `javascript:`/`data:`/etc, and this value is later rendered
+    // into an <a href> on the admin moderation dashboard. A non-http(s)
+    // scheme there is a stored-XSS vector against an authenticated admin.
+    const proofScheme = new URL(proofUrl).protocol;
+    if (proofScheme !== "http:" && proofScheme !== "https:") {
+      return { ok: false, message: "proofUrl must be an http:// or https:// URL." };
+    }
   } catch {
     return { ok: false, message: "proofUrl must be a valid URL." };
   }

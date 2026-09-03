@@ -210,8 +210,11 @@ async function handleListSubmissions(request, env, db) {
   }
 
   const rows = await db.all(
-    `SELECT id, component_id, price_amount, currency, submitted_by, status, created_at
-     FROM submissions WHERE status = ? ORDER BY created_at DESC LIMIT 200`,
+    `SELECT s.id, s.component_id, s.price_amount, s.currency, s.submitted_by, s.status,
+            s.created_at, s.reviewed_at, u.username AS reviewed_by
+     FROM submissions s
+     LEFT JOIN users u ON u.id = s.reviewed_by
+     WHERE s.status = ? ORDER BY s.created_at DESC LIMIT 200`,
     [status]
   );
   return json({ submissions: rows }, { status: 200 }, env, request);

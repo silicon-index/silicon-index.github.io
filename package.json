@@ -12,15 +12,18 @@
     "check": "node scripts/check-architecture.mjs && astro check",
     "seed:catalog": "vite-node scripts/seed-catalog.ts --",
     "admin:serve": "vite-node deploy/admin/server.ts",
+    "mcp:serve": "bun run deploy/mcp/server.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",
+    "@modelcontextprotocol/server": "^2.0.0",
     "astro": "^4.16.0",
     "drizzle-orm": "^0.45.2",
-    "uplot": "^1.6.31"
+    "uplot": "^1.6.31",
+    "zod": "^4.2.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",

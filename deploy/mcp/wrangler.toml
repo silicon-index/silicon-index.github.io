@@ -1,0 +1,21 @@
+# MCP (Model Context Protocol) server — Cloudflare Workers deployment.
+#
+# Deploys the SAME handler the Docker image serves:
+#   src/modules/mcp/api.ts
+#
+# Read-only, public market data — same trust posture as the database module,
+# so no service token is required to call it.
+#
+#   npx wrangler dev    --config deploy/mcp/wrangler.toml
+#   npx wrangler deploy --config deploy/mcp/wrangler.toml
+
+name = "silicon-index-mcp-api"
+main = "../../src/modules/mcp/api.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ALLOWED_ORIGINS = "*"
+
+[observability]
+enabled = true

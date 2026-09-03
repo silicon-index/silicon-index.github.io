@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Silicon Index — Early Preview (Demo Build)</title>
+  <meta name="description" content="Open-source, community-verified PC hardware market index and fair-value screener. Early preview — running on mock data while the platform is built in the open." />
+  <meta name="theme-color" content="#0b0f19" />
+
+  <!-- Open Graph / social preview -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Silicon Index — Early Preview (Demo Build)" />
+  <meta property="og:description" content="Open-source, community-verified PC hardware market index and fair-value screener. Early preview — running on mock data while the platform is built in the open." />
+  <meta property="og:url" content="https://silicon-index.github.io" />
+  <meta property="og:site_name" content="Silicon Index" />
+
+  <!-- Twitter/X card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Silicon Index — Early Preview (Demo Build)" />
+  <meta name="twitter:description" content="Open-source, community-verified PC hardware market index and fair-value screener. Early preview — running on mock data while the platform is built in the open." />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+
+    <div class="demo-banner" role="note">
+      <span class="demo-banner-badge">Early Preview</span>
+      <span class="demo-banner-text">
+        This is a work-in-progress demo build. Interface and data are for testing only — all prices shown are <strong>mock data</strong>, not live market values.
+      </span>
+      <a class="demo-banner-link" href="https://github.com/silicon-index/silicon-index.github.io/issues" target="_blank" rel="noopener noreferrer">Report an issue</a>
+    </div>
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">SI</span>
+        <span class="brand-name">Silicon Index</span>
+        <span class="brand-tag">MVP Screener</span>
+      </div>
+      <div class="topbar-meta">
+        <span id="row-count" class="meta-chip">0 components</span>
+        <span class="meta-chip meta-chip--live">● live mock data</span>
+      </div>
+    </header>
+
+    <div class="layout">
+
+      <aside class="sidebar" aria-label="Filters">
+        <h2 class="sidebar-title">Filters</h2>
+
+        <div class="filter-group">
+          <label for="filter-search">Search</label>
+          <input type="search" id="filter-search" placeholder="Component name…" autocomplete="off" />
+        </div>
+
+        <div class="filter-group">
+          <label for="filter-category">Category</label>
+          <select id="filter-category">
+            <option value="">All categories</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="filter-socket">Socket</label>
+          <select id="filter-socket">
+            <option value="">All sockets</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="filter-year">Release Year</label>
+          <select id="filter-year">
+            <option value="">All years</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="filter-scalped" />
+            <span>Scalper Alert only</span>
+          </label>
+        </div>
+
+        <button id="filter-reset" class="btn-reset" type="button">Reset filters</button>
+
+        <div class="sidebar-note">
+          <p><strong>Fair Value Score</strong> is a deterministic index computed from MSRP decay, availability, and verified transaction data.</p>
+        </div>
+      </aside>
+
+      <main class="content">
+
+        <section class="about-panel" aria-labelledby="about-heading">
+          <div class="table-panel-header">
+            <h1 id="about-heading">About Silicon Index</h1>
+            <span class="meta-chip meta-chip--live">● demo build</span>
+          </div>
+          <p class="about-lead">
+            Silicon Index is an open-source, community-verified market index and fair-value screener for PC hardware. The goal is
+            simple: expose real market values, track depreciation, and make scalper markups visible — using deterministic,
+            transparent pricing math instead of black-box estimates.
+          </p>
+          <div class="about-grid">
+            <div class="about-card">
+              <h3>What this is</h3>
+              <p>An early, public preview of the screener interface. We're building in the open, so this page ships before the data pipeline is finished.</p>
+            </div>
+            <div class="about-card">
+              <h3>What's real vs. mock</h3>
+              <p>The interface, filters, and layout are functional. The pricing shown below is <strong>sample data</strong>, not a live feed — see <a href="./dev-index.md">dev-index.md</a> for what's shipped per phase.</p>
+            </div>
+            <div class="about-card">
+              <h3>How to get involved</h3>
+              <p>Read the <a href="./DEV-GUIDE.md">Developer Guide</a>, browse the <a href="https://github.com/silicon-index" target="_blank" rel="noopener noreferrer">ecosystem repos</a> below, or open an issue with feedback.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="table-panel" aria-labelledby="screener-heading">
+          <div class="table-panel-header">
+            <h2 id="screener-heading">Market Screener</h2>
+            <div class="sort-controls">
+              <label for="sort-select">Sort by</label>
+              <select id="sort-select">
+                <option value="name-asc">Name (A–Z)</option>
+                <option value="price-asc">Market Price (Low → High)</option>
+                <option value="price-desc" selected>Market Price (High → Low)</option>
+                <option value="fv-desc">Fair Value Score (High → Low)</option>
+                <option value="delta-desc">Scalper Margin (High → Low)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-container" id="table-container">
+            <table class="screener-table">
+              <thead>
+                <tr>
+                  <th scope="col">Component</th>
+                  <th scope="col">Socket / Gen</th>
+                  <th scope="col" class="col-num">Fair Value Score</th>
+                  <th scope="col" class="col-num">Market Price</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody id="table-body">
+                <tr class="table-loading-row">
+                  <td colspan="5">Loading market data…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p id="empty-state" class="empty-state" hidden>No components match the current filters.</p>
+        </section>
+
+        <section class="ecosystem-panel" aria-labelledby="ecosystem-heading">
+          <div class="table-panel-header">
+            <h2 id="ecosystem-heading">Ecosystem</h2>
+            <span class="meta-chip">11 repositories</span>
+          </div>
+          <p class="ecosystem-intro">
+            This portal is one of 11 modular repositories under the
+            <a href="https://github.com/silicon-index" target="_blank" rel="noopener noreferrer">silicon-index</a>
+            organization, split for strict separation of concerns, data hygiene, and security.
+          </p>
+
+          <div class="ecosystem-grid">
+            <a class="ecosystem-card ecosystem-card--current" href="https://silicon-index.github.io" target="_blank" rel="noopener noreferrer">
+              <span class="ecosystem-card-name">Main Portal <span class="ecosystem-card-badge">you are here</span></span>
+              <span class="ecosystem-card-desc">Primary market screener, component search, and live index tables.</span>
+              <span class="ecosystem-card-repo">silicon-index.github.io</span>
+            </a>
+            <a class="ecosystem-card" href="https://github.com/silicon-index/silicon-index-backend-api" target="_blank" rel="noopener noreferrer">
+              <span class="ecosystem-card-name">Backend API</span>
+              <span class="ecosystem-card-desc">REST/serverless microservices, telemetry endpoints, and data delivery.</span>
+              <span class="ecosystem-card-repo">silicon-index-backend-api</span>
+            </a>
+            <a class="ecosystem-card" href="https://github.com/silicon-index/silicon-index-market-database.github.io" target="_blank" rel="noopener noreferrer">
+              <span class="ecosystem-card-name">Market Database</span>
+              <span class="ecosystem-card-desc">MongoDB schemas, validation definitions, and point-in-time recovery tooling.</span>
+              <span class="ecosystem-card-repo">silicon-index-market-database.github.io</span>
+            </a>
+            <a class="ecosystem-card" href="https://github.com/silicon-index/silicon-index-market-scrapers.github.io" target="_blank" rel="noopener noreferrer">
+              <span class="ecosystem-card-name">Market Scrapers</span>
+              <span class="ecosystem-card-desc">Multi-source price aggregation bots with integrated whitelist sanitization.</span>
+              <span class="ecosystem-card-repo">silicon-index-market-scrapers.github.io</span>
+            </a>
+            <a class="ecosystem-card" href="https://github.com/silicon-index/silicon-index-ai.github.io" target="_blank" rel="noopener noreferrer">
+              <span class="ecosystem-card-name">AI Models</span>
+              <span class="ecosystem-card-desc">Mathematical models for price anomaly detection and fair-value scoring.</span>
+              <span class="ecosystem-card-repo">silicon-index-ai.github.io</span>
+            </a>
+            <a class="ecosystem-card" href="https://silicon-index.github.io/silicon-index-security.github.io" target="_blank" rel="noopener noreferrer">
+              <span class="ecosystem-card-name">Security Hub</span>
+              <span class="ecosystem-card-desc">Security governance, incident advisories, and disclosure policies.</span>
+              <span class="ecosystem-card-repo">silicon-index-security.github.io</span>
+            </a>
+            <a class="ecosystem-card" href="https://silicon-index.github.io/silicon-index-admin-dashboard.github.io" target="_blank" rel="noopener noreferrer">
+              <span class="ecosystem-card-name">Admin Dashboard</span>
+              <span class="ecosystem-card-desc">Internal interface for price validation and moderation controls.</span>
+              <span class="ecosystem-card-repo">silicon-index-admin-dashboard.github.io</span>
+            </a>
+            <a class="ecosystem-card" href="https://silicon-index.github.io/silicon-index-contributors.github.io" target="_blank" rel="noopener noreferrer">
+              <span class="ecosystem-card-name">Contributors</span>
+              <span class="ecosystem-card-desc">Guidelines, community badges, and maintainer onboarding.</span>
+              <span class="ecosystem-card-repo">silicon-index-contributors.github.io</span>
+            </a>
+            <a class="ecosystem-card" href="https://github.com/silicon-index/silicon-index-donations-api.github.io" target="_blank" rel="noopener noreferrer">
+              <span class="ecosystem-card-name">Donations API</span>
+              <span class="ecosystem-card-desc">Financial ledger and donation processing integration.</span>
+              <span class="ecosystem-card-repo">silicon-index-donations-api.github.io</span>
+            </a>
+            <a class="ecosystem-card" href="https://silicon-index.github.io/silicon-index-museum.github.io" target="_blank" rel="noopener noreferrer">
+              <span class="ecosystem-card-name">Tech Museum</span>
+              <span class="ecosystem-card-desc">Retrospective archive of legacy architectures and historic MSRP benchmarks.</span>
+              <span class="ecosystem-card-repo">silicon-index-museum.github.io</span>
+            </a>
+            <a class="ecosystem-card" href="https://silicon-index.github.io/silicon-index-blog.github.io" target="_blank" rel="noopener noreferrer">
+              <span class="ecosystem-card-name">Community Blog</span>
+              <span class="ecosystem-card-desc">Market trend reports, teardowns, and algorithm release notes.</span>
+              <span class="ecosystem-card-repo">silicon-index-blog.github.io</span>
+            </a>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <footer class="footer">
+      <p>Silicon Index MVP · Static demo build · Data shown is mock/sample data, not live market pricing.</p>
+      <p class="footer-links">
+        <a href="./DEV-GUIDE.md">Developer Guide</a> ·
+        <a href="./TERMS-AND-RULES.md">Terms &amp; Rules</a> ·
+        <a href="./dev-index.md">Dev Index</a> ·
+        <a href="https://github.com/silicon-index" target="_blank" rel="noopener noreferrer">GitHub Org</a>
+      </p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

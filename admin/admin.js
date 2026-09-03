@@ -18,6 +18,22 @@ const tabs = document.querySelectorAll(".admin-tab");
 
 let currentStatus = "pending";
 
+/**
+ * Purely cosmetic: a short, non-sequential-looking identifier for display, derived
+ * deterministically from the submission's real (sequential) row id via FNV-1a. This is
+ * NOT a security boundary - the real id is still what's sent to the approve/reject
+ * endpoints, and it's shown on hover (title attribute) - it just avoids putting a raw
+ * "you are submission #4 of N" counter in front of every admin.
+ */
+function displayId(id) {
+  let hash = 0x811c9dc5;
+  for (const ch of `sub-${id}`) {
+    hash ^= ch.charCodeAt(0);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
 function showOnly(view) {
   for (const el of [loadingView, deniedView, dashboardView]) el.hidden = el !== view;
 }
@@ -99,6 +115,12 @@ function renderSubmissions(rows) {
   for (const row of rows) {
     const tr = document.createElement("tr");
 
+    const idCell = document.createElement("td");
+    idCell.className = "admin-mono";
+    idCell.textContent = displayId(row.id);
+    idCell.title = `Internal ID: ${row.id}`;
+    tr.appendChild(idCell);
+
     const componentCell = document.createElement("td");
     componentCell.textContent = row.component_id;
     tr.appendChild(componentCell);
@@ -114,6 +136,14 @@ function renderSubmissions(rows) {
     const dateCell = document.createElement("td");
     dateCell.textContent = new Date(row.created_at * 1000).toLocaleString();
     tr.appendChild(dateCell);
+
+    const reviewedByCell = document.createElement("td");
+    reviewedByCell.textContent = row.reviewed_by || "—";
+    tr.appendChild(reviewedByCell);
+
+    const reviewedAtCell = document.createElement("td");
+    reviewedAtCell.textContent = row.reviewed_at ? new Date(row.reviewed_at * 1000).toLocaleString() : "—";
+    tr.appendChild(reviewedAtCell);
 
     const actionsCell = document.createElement("td");
     if (currentStatus === "pending") {

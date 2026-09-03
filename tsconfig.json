@@ -14,7 +14,8 @@
     "legacy-static",
     "deploy/ai",
     "deploy/database",
-    "deploy/scrapers"
+    "deploy/scrapers",
+    "deploy/mcp"
   ],
   "compilerOptions": {
     "baseUrl": ".",

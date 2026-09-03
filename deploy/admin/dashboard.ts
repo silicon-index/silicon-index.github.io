@@ -110,6 +110,24 @@ function proofHost(url: string): string {
   }
 }
 
+/**
+ * Defense in depth: `proofUrl` should already be http(s)-only by the time it
+ * reaches here (see contributors/api.ts's submit-time validation), but this
+ * is the actual XSS sink — an <a href> on an authenticated admin's page — so
+ * it re-checks the scheme itself rather than trusting the caller. A
+ * non-http(s) value (e.g. a `javascript:` URI, however it got here) renders
+ * as an inert `#` instead of being emitted into the href.
+ */
+function safeProofHref(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") return url;
+  } catch {
+    // fall through
+  }
+  return "#";
+}
+
 function renderRow(row: QueueRow, csrfToken: string): string {
   const trusted = row.contributorTier === "trusted";
   const reasons = DENIAL_REASONS.map((r) => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join("");
@@ -128,7 +146,7 @@ function renderRow(row: QueueRow, csrfToken: string): string {
     </td>
     <td class="num">${escapeHtml(formatPrice(row.reportedPrice, row.currency))}</td>
     <td>
-      <a href="${escapeHtml(row.proofUrl)}" target="_blank" rel="noopener noreferrer nofollow">View</a>
+      <a href="${escapeHtml(safeProofHref(row.proofUrl))}" target="_blank" rel="noopener noreferrer nofollow">View</a>
       <div class="meta">${escapeHtml(proofHost(row.proofUrl))}</div>
     </td>
     <td class="meta">${escapeHtml(formatTimestamp(row.submittedAt))}</td>

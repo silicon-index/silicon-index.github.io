@@ -1,19 +1,22 @@
 # syntax=docker/dockerfile:1
 #
-# database module API — container image for Coolify or any Docker host.
+# mcp module API — container image for Coolify or any Docker host.
 # Build from the REPOSITORY ROOT:
-#   docker build -f deploy/database/Dockerfile -t silicon-index-database-api .
+#   docker build -f deploy/mcp/Dockerfile -t silicon-index-mcp-api .
 #
-# The handler has no npm dependencies (relative imports and web APIs only),
-# so there is no install step, no node_modules, and no build output to copy.
+# Unlike database/ai/scrapers, this handler has one real npm dependency (the
+# official MCP SDK), so there is an install step.
 FROM oven/bun:1-alpine
 
 WORKDIR /app
 
+COPY package.json bun.lockb* ./
+RUN bun install --production
+
 # Only what the handler needs, so an unrelated change does not bust the layer.
-COPY src/platform            ./src/platform
+COPY src/platform           ./src/platform
 COPY src/modules            ./src/modules
-COPY deploy/database/server.ts  ./deploy/database/server.ts
+COPY deploy/mcp/server.ts   ./deploy/mcp/server.ts
 
 ENV PORT=8080
 EXPOSE 8080
@@ -25,4 +28,4 @@ USER bun
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD bun --eval "fetch('http://127.0.0.1:'+(Bun.env.PORT??'8080')+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-CMD ["bun", "run", "deploy/database/server.ts"]
+CMD ["bun", "run", "deploy/mcp/server.ts"]

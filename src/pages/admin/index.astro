@@ -415,6 +415,18 @@ import { DEV_ECOSYSTEM_NAV } from "../../config/navigation";
         return "invalid URL";
       }
     })();
+    // Defense in depth: only render an http(s) href. `new URL()` above
+    // accepts `javascript:`/etc without throwing, and this is the actual
+    // sink — an <a href> on the admin page — so it re-checks the scheme
+    // itself rather than trusting upstream validation.
+    const proofHref = (() => {
+      try {
+        const parsed = new URL(item.proofUrl);
+        return parsed.protocol === "http:" || parsed.protocol === "https:" ? item.proofUrl : "#";
+      } catch {
+        return "#";
+      }
+    })();
 
     return (
       "<tr>" +
@@ -430,7 +442,7 @@ import { DEV_ECOSYSTEM_NAV } from "../../config/navigation";
       `<td class="num-cell">${medianCell}</td>` +
       // Host shown alongside the link so a moderator can spot an unwhitelisted
       // source without opening it.
-      `<td><a href="${escapeHtml(item.proofUrl)}" target="_blank" rel="noopener noreferrer">View</a>` +
+      `<td><a href="${escapeHtml(proofHref)}" target="_blank" rel="noopener noreferrer">View</a>` +
       `<br><span class="spec-meta">${escapeHtml(proofHost)}</span></td>` +
       `<td><span class="spec-year" title="${escapeHtml(item.submittedAt)}">${escapeHtml(submitted.toLocaleDateString())}` +
       `<br>${escapeHtml(submitted.toLocaleTimeString())}</span></td>` +

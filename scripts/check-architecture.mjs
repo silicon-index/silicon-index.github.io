@@ -90,7 +90,13 @@ const SERVER_ONLY = new Set(["src/modules/database/db.ts"]);
  * to this list means asserting the package runs on Cloudflare Workers; the
  * `esbuild --platform=neutral` check is what proves it.
  */
-const API_RUNTIME_ALLOWLIST = [/^drizzle-orm(\/|$)/];
+const API_RUNTIME_ALLOWLIST = [
+  /^drizzle-orm(\/|$)/,
+  // MCP server (src/modules/mcp): both ship a Workers-targeted Web Standard
+  // transport (WebStandardStreamableHTTPServerTransport) with no node:* deps.
+  /^zod(\/|$)/,
+  /^@modelcontextprotocol\/(server|core)(\/|$)/
+];
 
 /**
  * Env vars that must never appear in code shipped to a browser.

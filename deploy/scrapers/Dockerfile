@@ -11,7 +11,7 @@ FROM oven/bun:1-alpine
 WORKDIR /app
 
 # Only what the handler needs, so an unrelated change does not bust the layer.
-COPY src/lib/http.ts        ./src/lib/http.ts
+COPY src/platform            ./src/platform
 COPY src/modules            ./src/modules
 COPY deploy/scrapers/server.ts  ./deploy/scrapers/server.ts
 
